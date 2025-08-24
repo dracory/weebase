@@ -369,15 +369,15 @@ All operations are handled through a single URL endpoint, controlled by the `act
 - [x] Implement dialect-aware metadata discovery (schemas, tables, views)
 - [x] `list_schemas`, `list_tables`, `table_info` actions
 - [x] `view_definition` action
-- [ ] Standardize identifier quoting per dialect
-- [ ] Pagination and search for tables/views
+- [x] Standardize identifier quoting per dialect
+- [x] Pagination and search for tables/views
 
 ### Phase 5: Data Browsing and CRUD
 - [x] `browse_rows` with server-side pagination, sort, basic filters
 - [x] Safe default select limit (configurable)
 - [ ] Row view: type-aware renderers, null display, copy/download
-- [ ] `insert_row`, `update_row`, `delete_row` with transaction wrapping
-- [ ] Enforce safe mode confirmations on destructive ops
+- [x] `insert_row`, `update_row`, `delete_row` with transaction wrapping
+- [x] Enforce safe mode confirmations on destructive ops
 
 ### Phase 6: SQL Console
 - [ ] Textarea editor with run/cancel, transactional toggle

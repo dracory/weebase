@@ -24,6 +24,39 @@
   </section>
 
   <section>
+    <h3>SQL Console</h3>
+    <details open>
+      <summary>Run SQL</summary>
+      <form method="post" action="{{.BasePath}}" target="_blank">
+        <input type="hidden" name="{{.ActionParam}}" value="sql_execute">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div>
+          <label>SQL:</label><br>
+          <textarea name="sql" rows="6" cols="80" placeholder="SELECT 1;"></textarea>
+        </div>
+        <label><input type="checkbox" name="transactional" value="true"> Transactional</label>
+        <div>
+          <button type="submit">Run</button>
+        </div>
+      </form>
+    </details>
+    <details>
+      <summary>Explain SQL</summary>
+      <form method="post" action="{{.BasePath}}" target="_blank">
+        <input type="hidden" name="{{.ActionParam}}" value="sql_explain">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div>
+          <label>SQL:</label><br>
+          <textarea name="sql" rows="4" cols="80" placeholder="SELECT * FROM my_table;"></textarea>
+        </div>
+        <div>
+          <button type="submit">Explain</button>
+        </div>
+      </form>
+    </details>
+  </section>
+
+  <section>
     <h3>Connection</h3>
     {{if .Conn}}
       <p><strong>Status:</strong> Connected (driver: {{index .Conn "driver"}})</p>
@@ -131,6 +164,58 @@
         <label>Schema: <input name="schema" placeholder="public | dbname | dbo"></label>
         <label>Table: <input name="table" placeholder="my_table" required></label>
         <button type="submit">Describe</button>
+      </form>
+    </details>
+    <details>
+      <summary>Row view</summary>
+      <form method="get" action="{{.BasePath}}" target="_blank">
+        <input type="hidden" name="{{.ActionParam}}" value="row_view">
+        <label>Schema: <input name="schema" placeholder="public | dbname | dbo"></label>
+        <label>Table: <input name="table" placeholder="my_table" required></label>
+        <label>Key column: <input name="key_column" placeholder="id" required></label>
+        <label>Key value: <input name="key_value" placeholder="42" required></label>
+        <button type="submit">Fetch</button>
+      </form>
+    </details>
+    <details>
+      <summary>Delete row</summary>
+      <form method="post" action="{{.BasePath}}" target="_blank" onsubmit="return confirm('Are you sure? This will delete one row.');">
+        <input type="hidden" name="{{.ActionParam}}" value="delete_row">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <label>Schema: <input name="schema" placeholder="public | dbname | dbo"></label>
+        <label>Table: <input name="table" placeholder="my_table" required></label>
+        <label>Key column: <input name="key_column" placeholder="id" required></label>
+        <label>Key value: <input name="key_value" placeholder="42" required></label>
+        <label><input type="checkbox" name="confirm" value="yes" {{if .SafeModeDefault}}required{{end}}> Confirm delete (Safe mode)</label>
+        <button type="submit">Delete</button>
+      </form>
+    </details>
+    <details>
+      <summary>Insert row</summary>
+      <form method="post" action="{{.BasePath}}" target="_blank">
+        <input type="hidden" name="{{.ActionParam}}" value="insert_row">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <label>Schema: <input name="schema" placeholder="public | dbname | dbo"></label>
+        <label>Table: <input name="table" placeholder="my_table" required></label>
+        <label>Columns (csv): <input name="cols" placeholder="name, email" required></label>
+        <label>Values (csv): <input name="vals" placeholder="alice, a@example.com" required></label>
+        <label><input type="checkbox" name="confirm" value="yes" {{if .SafeModeDefault}}required{{end}}> Confirm insert (Safe mode)</label>
+        <button type="submit">Insert</button>
+      </form>
+    </details>
+    <details>
+      <summary>Update row</summary>
+      <form method="post" action="{{.BasePath}}" target="_blank">
+        <input type="hidden" name="{{.ActionParam}}" value="update_row">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <label>Schema: <input name="schema" placeholder="public | dbname | dbo"></label>
+        <label>Table: <input name="table" placeholder="my_table" required></label>
+        <label>Key column: <input name="key_column" placeholder="id" required></label>
+        <label>Key value: <input name="key_value" placeholder="42" required></label>
+        <label>Set columns (csv): <input name="set_cols" placeholder="name, email" required></label>
+        <label>Set values (csv): <input name="set_vals" placeholder="Alice, a@example.com" required></label>
+        <label><input type="checkbox" name="confirm" value="yes" {{if .SafeModeDefault}}required{{end}}> Confirm update (Safe mode)</label>
+        <button type="submit">Update</button>
       </form>
     </details>
     <details>

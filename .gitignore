@@ -1,2 +1,2 @@
 *.exe
-cmd/server/tmp/main.exe
+cmd/server/tmp/*

@@ -24,7 +24,7 @@ func EnsureCSRFCookie(w http.ResponseWriter, r *http.Request, secret string) str
 			Value:    val,
 			Path:     "/",
 			HttpOnly: true,
-			Secure:   true,
+			Secure:   r.TLS != nil,
 			SameSite: http.SameSiteLaxMode,
 		})
 		c = &http.Cookie{Name: csrfCookieName, Value: val}

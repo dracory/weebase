@@ -55,7 +55,7 @@ func EnsureSession(w http.ResponseWriter, r *http.Request, secret string) *Sessi
 		Value:    id,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   r.TLS != nil,
 		SameSite: http.SameSiteLaxMode,
 	})
 	return s

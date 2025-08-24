@@ -4,7 +4,8 @@ console.log("WeeBase assets loaded");
 (function () {
   const form = document.getElementById("adminerConnectForm");
   if (!form) return;
-  form.addEventListener("submit", function (e) {
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
     try {
       const driver = form.querySelector('[name="driver"]').value.trim();
       const server = (form.querySelector('[name="server"]').value || "").trim();
@@ -18,7 +19,6 @@ console.log("WeeBase assets loaded");
         case "postgres":
         case "pg":
         case "postgresql": {
-          // Example: host=localhost user=me password=secret dbname=mydb port=5432 sslmode=disable
           const parts = [];
           if (server) parts.push(`host=${server}`);
           if (user) parts.push(`user=${user}`);
@@ -31,7 +31,6 @@ console.log("WeeBase assets loaded");
         }
         case "mysql":
         case "mariadb": {
-          // Example: user:pass@tcp(localhost:3306)/dbname?parseTime=true
           const auth = user || pass ? `${user}:${pass}` : user;
           const dbpart = db ? `/${db}` : "";
           dsn = `${auth}@tcp(${hostPort})${dbpart}?parseTime=true`;
@@ -39,13 +38,11 @@ console.log("WeeBase assets loaded");
         }
         case "sqlite":
         case "sqlite3": {
-          // Database field is the file path (e.g., :memory: or ./data.db)
           dsn = db || ":memory:";
           break;
         }
         case "sqlserver":
         case "mssql": {
-          // Example: sqlserver://user:pass@localhost:1433?database=dbname
           const auth = user || pass ? `${encodeURIComponent(user)}:${encodeURIComponent(pass)}@` : "";
           const qp = db ? `?database=${encodeURIComponent(db)}` : "";
           dsn = `sqlserver://${auth}${hostPort}${qp}`;
@@ -56,8 +53,23 @@ console.log("WeeBase assets loaded");
           break;
       }
       form.querySelector('[name="dsn"]').value = dsn;
+
+      const fd = new FormData(form);
+      const resp = await fetch(form.action, {
+        method: "POST",
+        body: fd,
+        credentials: "same-origin",
+      });
+      const data = await resp.json().catch(() => null);
+      if (resp.ok && data && (data.status === "success" || data.ok)) {
+        // Redirect to home
+        window.location.href = form.action;
+      } else {
+        const msg = (data && (data.message || data.error)) || `HTTP ${resp.status}`;
+        alert("Connect failed: " + msg);
+      }
     } catch (err) {
-      console.warn("failed constructing dsn:", err);
+      alert("Unexpected error: " + (err && err.message ? err.message : err));
     }
   });
 })();
