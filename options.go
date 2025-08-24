@@ -26,6 +26,12 @@ type Options struct {
 
     // SessionSecret is used for CSRF token derivation and session-level secrets.
     SessionSecret string
+
+    // DefaultConnection optionally provides a connection to auto-connect per session.
+    DefaultConnection *DefaultConnection
+
+    // PreconfiguredProfiles are loaded into the ConnectionStore at startup.
+    PreconfiguredProfiles []ConnectionProfile
 }
 
 // withDefaults applies default values to Options.
@@ -71,4 +77,10 @@ func WithActionParam(key string) Option { return func(o *Options) { o.ActionPara
 
 // WithSessionSecret sets the session secret.
 func WithSessionSecret(secret string) Option { return func(o *Options) { o.SessionSecret = secret } }
+
+// DefaultConnection specifies a driver+DSN for auto-connect.
+type DefaultConnection struct {
+    Driver string
+    DSN    string
+}
 

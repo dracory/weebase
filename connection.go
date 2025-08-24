@@ -14,6 +14,7 @@ type ConnectionProfile struct {
 type ConnectionStore interface {
 	List() []ConnectionProfile
 	Save(p ConnectionProfile) error
+	Get(id string) (ConnectionProfile, bool)
 }
 
 // MemoryConnectionStore is an in-memory implementation.
@@ -37,4 +38,15 @@ func (s *MemoryConnectionStore) Save(p ConnectionProfile) error {
 	defer s.mu.Unlock()
 	s.list = append(s.list, p)
 	return nil
+}
+
+func (s *MemoryConnectionStore) Get(id string) (ConnectionProfile, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, p := range s.list {
+		if p.ID == id {
+			return p, true
+		}
+	}
+	return ConnectionProfile{}, false
 }

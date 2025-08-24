@@ -21,4 +21,101 @@
       Health: <a href="{{.BasePath}}?action=healthz">/healthz</a>, Ready: <a href="{{.BasePath}}?action=readyz">/readyz</a>
     </p>
   </section>
+
+  <section>
+    <h3>Connection</h3>
+    {{if .Conn}}
+      <p><strong>Status:</strong> Connected (driver: {{index .Conn "driver"}})</p>
+      <form method="get" action="{{.BasePath}}">
+        <input type="hidden" name="{{.ActionParam}}" value="disconnect">
+        <button type="submit">Disconnect</button>
+      </form>
+    {{else}}
+      <p><strong>Status:</strong> Not connected</p>
+      {{if .AllowAdHocConnections}}
+      <details open>
+        <summary>Connect</summary>
+        <form method="post" action="{{.BasePath}}">
+          <input type="hidden" name="{{.ActionParam}}" value="connect">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <label>Driver:
+            <select name="driver" required>
+              {{range .EnabledDrivers}}<option value="{{.}}">{{.}}</option>{{end}}
+            </select>
+          </label>
+          <label>DSN:
+            <input name="dsn" placeholder="example: user:pass@tcp(localhost:3306)/dbname?parseTime=true" required style="width: 40em">
+          </label>
+          <button type="submit">Connect</button>
+        </form>
+      </details>
+      <details>
+        <summary>Connect via Profile ID</summary>
+        <form method="post" action="{{.BasePath}}">
+          <input type="hidden" name="{{.ActionParam}}" value="connect">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <label>Profile ID: <input name="profile_id" required></label>
+          <button type="submit">Connect</button>
+        </form>
+      </details>
+      {{end}}
+    {{end}}
+  </section>
+
+  <section>
+    <h3>Profiles</h3>
+    <p>
+      View saved profiles JSON: <a href="{{.BasePath}}?{{.ActionParam}}=profiles" target="_blank">profiles</a>
+    </p>
+    <details>
+      <summary>Save new profile</summary>
+      <form method="post" action="{{.BasePath}}">
+        <input type="hidden" name="{{.ActionParam}}" value="profiles_save">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <label>Name: <input name="name" required></label>
+        <label>Driver:
+          <select name="driver" required>
+            {{range .EnabledDrivers}}<option value="{{.}}">{{.}}</option>{{end}}
+          </select>
+        </label>
+        <label>DSN: <input name="dsn" required style="width: 40em"></label>
+        <button type="submit">Save Profile</button>
+      </form>
+    </details>
+  </section>
+
+  <section>
+    <h3>Browse</h3>
+    <p>
+      List schemas: <a href="{{.BasePath}}?{{.ActionParam}}=list_schemas" target="_blank">list_schemas</a>
+    </p>
+    <details>
+      <summary>List tables</summary>
+      <form method="get" action="{{.BasePath}}" target="_blank">
+        <input type="hidden" name="{{.ActionParam}}" value="list_tables">
+        <label>Schema: <input name="schema" placeholder="public | dbname | dbo"></label>
+        <button type="submit">List tables</button>
+      </form>
+    </details>
+    <details>
+      <summary>Table info</summary>
+      <form method="get" action="{{.BasePath}}" target="_blank">
+        <input type="hidden" name="{{.ActionParam}}" value="table_info">
+        <label>Schema: <input name="schema" placeholder="public | dbname | dbo"></label>
+        <label>Table: <input name="table" placeholder="my_table" required></label>
+        <button type="submit">Describe</button>
+      </form>
+    </details>
+    <details>
+      <summary>Browse rows</summary>
+      <form method="get" action="{{.BasePath}}" target="_blank">
+        <input type="hidden" name="{{.ActionParam}}" value="browse_rows">
+        <label>Schema: <input name="schema" placeholder="public | dbname | dbo"></label>
+        <label>Table: <input name="table" placeholder="my_table" required></label>
+        <label>Limit: <input name="limit" type="number" value="50" min="1" max="500"></label>
+        <label>Offset: <input name="offset" type="number" value="0" min="0"></label>
+        <button type="submit">Browse</button>
+      </form>
+    </details>
+  </section>
 {{end}}
