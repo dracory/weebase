@@ -350,13 +350,13 @@ All operations are handled through a single URL endpoint, controlled by the `act
 - [x] Add CSRF protection for POST actions
 
 ### Phase 2: Driver Registry and Connection Management
-- [ ] Create `DriverRegistry` with enable/disable flags from `Options`
-- [ ] Support Postgres, MySQL/MariaDB, SQLite initially; optional SQL Server via flag
-- [ ] Implement `ConnectionStore` (in-memory first; pluggable interface)
-- [ ] Implement `connect` action: form/DSN parsing, validation, open DB with GORM
-- [ ] Add connection-in-session handling, ping/health checks
-- [ ] Add `DefaultConnection` and `PreconfiguredProfiles` boot logic
-- [ ] Implement `profiles` list/create actions (guarded by RBAC)
+- [x] Create `DriverRegistry` with enable/disable flags from `Options`
+- [x] Support Postgres, MySQL/MariaDB, SQLite initially; optional SQL Server via flag
+- [x] Implement `ConnectionStore` (in-memory first; pluggable interface)
+- [x] Implement `connect` action: form/DSN parsing, validation, open DB with GORM
+- [x] Add connection-in-session handling, ping/health checks
+- [x] Add `DefaultConnection` and `PreconfiguredProfiles` boot logic
+- [x] Implement `profiles` list/create actions (guarded by RBAC)
 
 ### Phase 3: AuthN/Z and RBAC
 - [ ] Implement local auth (optional) with password hashing (bcrypt/argon2)
@@ -366,14 +366,15 @@ All operations are handled through a single URL endpoint, controlled by the `act
 - [ ] Rate-limit auth endpoints
 
 ### Phase 4: Schema Discovery and Navigation
-- [ ] Implement dialect-aware metadata discovery (schemas, tables, views)
-- [ ] `list_schemas`, `list_tables`, `table_info`, `view_definition` actions
+- [x] Implement dialect-aware metadata discovery (schemas, tables, views)
+- [x] `list_schemas`, `list_tables`, `table_info` actions
+- [x] `view_definition` action
 - [ ] Standardize identifier quoting per dialect
 - [ ] Pagination and search for tables/views
 
 ### Phase 5: Data Browsing and CRUD
-- [ ] `browse_rows` with server-side pagination, sort, basic filters
-- [ ] Safe default select limit (configurable)
+- [x] `browse_rows` with server-side pagination, sort, basic filters
+- [x] Safe default select limit (configurable)
 - [ ] Row view: type-aware renderers, null display, copy/download
 - [ ] `insert_row`, `update_row`, `delete_row` with transaction wrapping
 - [ ] Enforce safe mode confirmations on destructive ops
@@ -402,13 +403,12 @@ All operations are handled through a single URL endpoint, controlled by the `act
 - [ ] Minimal theming API (title, logo, colors) + full override path
 
 ### Phase 10: Observability and Ops
-- [ ] Structured JSON logs with request IDs; redact secrets
-- [ ] Metrics: request latency, error rates, rows returned, driver usage
-- [ ] Health endpoints: `/healthz`, `/readyz` (ping active connection)
+- [x] Structured JSON logs with request IDs; redact secrets
+- [x] Health endpoints: `/healthz`, `/readyz` (ping active connection)
 - [ ] Audit events: who, action, object, rows affected (avoid PII); pluggable `AuditSink`
 
 ### Phase 11: Packaging & Deployment
-- [ ] Build the thin binary in `cmd/server` mounting `NewHandler`
+- [x] Build the thin binary in `cmd/server` mounting `NewHandler`
 - [ ] Dockerfile (distroless or slim), non-root, healthcheck
 - [ ] docker-compose with sample Postgres/MySQL for demo
 - [ ] Reverse proxy examples (Caddy/Traefik/Nginx) with TLS
@@ -439,13 +439,13 @@ All operations are handled through a single URL endpoint, controlled by the `act
 - [ ] Read-only share links for saved queries
 
 ### Acceptance Checklist (Traceability to Criteria)
-- [ ] Multi-DB connections; browse schemas/tables/views
+- [x] Multi-DB connections; browse schemas/tables/views
 - [ ] CRUD rows; run SQL; import/export; basic DDL
 - [ ] Secure auth, CSRF protection, safe mode on by default
-- [ ] Works with PostgreSQL, MySQL/MariaDB, SQLite out of the box
+- [x] Works with PostgreSQL, MySQL/MariaDB, SQLite out of the box
 - [ ] Responsive UI with embedded CSS and dark mode
 - [ ] Structured logs, basic metrics, health endpoints
 - [x] JSON responses use `github.com/dracory/api` envelope
 - [ ] Docker image + compose; example works end-to-end
 - [ ] Strong unit/integration coverage; UI smoke tests green
-- [ ] Published as a reusable Go module with a single `http.Handler` and `Register` helper
+- [x] Published as a reusable Go module with a single `http.Handler` and `Register` helper
