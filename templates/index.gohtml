@@ -1,0 +1,24 @@
+{{define "index.gohtml"}}{{template "layout" .}}{{end}}
+
+{{define "title"}}Home{{end}}
+
+{{define "content"}}
+  <section>
+    <h2>Welcome</h2>
+    <p>This is the WeeBase admin UI scaffold. The single endpoint is mounted at <code>{{.BasePath}}</code>.
+    Use the <code>{{.ActionParam}}</code> query parameter to select actions.</p>
+
+    <h3>Enabled Drivers</h3>
+    {{if .EnabledDrivers}}
+      <ul>
+        {{range .EnabledDrivers}}<li>{{.}}</li>{{end}}
+      </ul>
+    {{else}}
+      <p><em>No drivers enabled yet.</em></p>
+    {{end}}
+
+    <p>
+      Health: <a href="{{.BasePath}}?action=healthz">/healthz</a>, Ready: <a href="{{.BasePath}}?action=readyz">/readyz</a>
+    </p>
+  </section>
+{{end}}

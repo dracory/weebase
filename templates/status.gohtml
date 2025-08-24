@@ -1,0 +1,11 @@
+{{define "status.gohtml"}}{{template "layout" .}}{{end}}
+
+{{define "title"}}{{.Title}}{{end}}
+
+{{define "content"}}
+  <section>
+    <h2>{{.Title}}</h2>
+    <p>{{.Message}}</p>
+    <p><a href="{{.BasePath}}">Back to Home</a></p>
+  </section>
+{{end}}
