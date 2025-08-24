@@ -12,6 +12,8 @@ import (
 type Handler struct {
 	opts     Options
 	tmplBase *template.Template
+	drivers  *DriverRegistry
+	profiles ConnectionStore
 }
 
 // NewHandler constructs a new Handler with defaults applied.
@@ -19,7 +21,10 @@ func NewHandler(o Options) http.Handler {
 	o = o.withDefaults()
 	// build templates once
 	tmpl := parseTemplates()
-	return &Handler{opts: o, tmplBase: tmpl}
+	// initialize driver registry and in-memory profile store for now
+	reg := NewDriverRegistry(o.EnabledDrivers)
+	store := NewMemoryConnectionStore()
+	return &Handler{opts: o, tmplBase: tmpl, drivers: reg, profiles: store}
 }
 
 // Register mounts the handler on the provided mux at path.
@@ -37,10 +42,24 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'")
 
+	// Ensure a session exists (sets cookie if missing)
+	_ = EnsureSession(w, r, h.opts.SessionSecret)
+
+	// Ensure CSRF cookie and get a token for templates
+	csrfToken := EnsureCSRFCookie(w, r, h.opts.SessionSecret)
+
+	// Verify CSRF for POST requests
+	if r.Method == http.MethodPost {
+		if !VerifyCSRF(r, h.opts.SessionSecret) {
+			WriteError(w, r, http.StatusForbidden, "invalid or missing CSRF token")
+			return
+		}
+	}
+
 	action := r.URL.Query().Get(h.opts.ActionParam)
 	switch action {
 	case "", "home":
-		h.handleHome(w, r)
+		h.handleHome(w, r, csrfToken)
 		return
 	case "asset_css":
 		serveAsset(w, r, "assets/style.css", "text/css; charset=utf-8")
@@ -57,6 +76,19 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ready"))
 		return
+	// --- Action stubs (to be implemented) ---
+	case "connect", "disconnect",
+		"list_schemas", "list_tables", "table_info", "view_definition",
+		"browse_rows",
+		"insert_row", "update_row", "delete_row",
+		"sql_execute", "sql_explain",
+		"list_saved_queries", "save_query",
+		"ddl_create_table", "ddl_alter_table", "ddl_drop_table",
+		"export", "import",
+		"login", "logout",
+		"profiles", "profiles_save":
+		JSONNotImplemented(w, action)
+		return
 	default:
 		// For now, render 404 within layout
 		h.renderStatus(w, r, http.StatusNotFound, "Unknown action: "+action)
@@ -64,13 +96,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) handleHome(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleHome(w http.ResponseWriter, r *http.Request, csrfToken string) {
 	data := map[string]any{
 		"Title":           "WeeBase",
 		"BasePath":        h.opts.BasePath,
 		"ActionParam":     h.opts.ActionParam,
-		"EnabledDrivers":  h.opts.EnabledDrivers,
+		"EnabledDrivers":  h.drivers.List(),
 		"SafeModeDefault": h.opts.SafeModeDefault,
+		"CSRFToken":       csrfToken,
 	}
 	if err := h.tmplBase.ExecuteTemplate(w, "index.gohtml", data); err != nil {
 		log.Printf("render home: %v", err)

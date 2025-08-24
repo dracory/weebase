@@ -334,20 +334,20 @@ All operations are handled through a single URL endpoint, controlled by the `act
 ## Detailed Implementation Plan
 
 ### Phase 0: Project Scaffolding & Foundations
-- [ ] Initialize module path `github.com/dracory/weebase` and baseline `go.mod`
-- [ ] Establish project layout: root package, `cmd/server/`, `templates/`, `assets/`, `docs/`
-- [ ] Add logging (Go slog) wrapper with request ID middleware
-- [ ] Add configuration loader (env + flags), defaults, and validation
-- [ ] Add security headers middleware (HSTS, CSP, X-Frame-Options, etc.)
-- [ ] Add session/cookie setup with configurable `SESSION_SECRET`
-- [ ] Embed assets/templates with `embed` and plumb override hooks
+- [x] Initialize module path `github.com/dracory/weebase` and baseline `go.mod`
+- [x] Establish project layout: root package, `cmd/server/`, `templates/`, `assets/`, `docs/`
+- [x] Add logging (Go slog) wrapper with request ID middleware
+- [x] Add configuration loader (env + flags), defaults, and validation
+- [x] Add security headers middleware (HSTS, CSP, X-Frame-Options, etc.)
+- [x] Add session/cookie setup with configurable `SESSION_SECRET`
+- [x] Embed assets/templates with `embed` and plumb override hooks
 
 ### Phase 1: HTTP Handler and Single-Endpoint Router
-- [ ] Define `Options` and functional options in the root package
-- [ ] Implement `NewHandler(opts Options) http.Handler`
-- [ ] Implement action dispatcher based on `Options.ActionParam` (default `action`)
-- [ ] Define response helpers (HTML render, JSON envelope via `github.com/dracory/api`)
-- [ ] Add CSRF protection for POST actions
+- [x] Define `Options` and functional options in the root package
+- [x] Implement `NewHandler(opts Options) http.Handler`
+- [x] Implement action dispatcher based on `Options.ActionParam` (default `action`)
+- [x] Define response helpers (HTML render, JSON envelope via `github.com/dracory/api`)
+- [x] Add CSRF protection for POST actions
 
 ### Phase 2: Driver Registry and Connection Management
 - [ ] Create `DriverRegistry` with enable/disable flags from `Options`
@@ -445,7 +445,7 @@ All operations are handled through a single URL endpoint, controlled by the `act
 - [ ] Works with PostgreSQL, MySQL/MariaDB, SQLite out of the box
 - [ ] Responsive UI with embedded CSS and dark mode
 - [ ] Structured logs, basic metrics, health endpoints
-- [ ] JSON responses use `github.com/dracory/api` envelope
+- [x] JSON responses use `github.com/dracory/api` envelope
 - [ ] Docker image + compose; example works end-to-end
 - [ ] Strong unit/integration coverage; UI smoke tests green
 - [ ] Published as a reusable Go module with a single `http.Handler` and `Register` helper
