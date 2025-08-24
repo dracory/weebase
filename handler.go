@@ -51,7 +51,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Verify CSRF for POST requests
 	if r.Method == http.MethodPost {
 		if !VerifyCSRF(r, h.opts.SessionSecret) {
-			WriteError(w, r, http.StatusForbidden, "invalid or missing CSRF token")
+			WriteError(w, r, "invalid or missing CSRF token")
 			return
 		}
 	}

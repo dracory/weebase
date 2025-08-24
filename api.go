@@ -18,20 +18,16 @@ func WriteSuccess(w http.ResponseWriter, r *http.Request, status int, msg string
 }
 
 // WriteSuccessWithData writes a success envelope with message and data.
-func WriteSuccessWithData(w http.ResponseWriter, r *http.Request, status int, msg string, data map[string]any) {
-	if status == http.StatusOK {
-		api.Respond(w, r, api.SuccessWithData(msg, data))
-		return
-	}
-	api.RespondWithStatusCode(w, r, api.SuccessWithData(msg, data), status)
+func WriteSuccessWithData(w http.ResponseWriter, r *http.Request, msg string, data map[string]any) {
+	api.Respond(w, r, api.SuccessWithData(msg, data))
 }
 
 // WriteError writes an error envelope with message and status code.
-func WriteError(w http.ResponseWriter, r *http.Request, status int, msg string) {
+func WriteError(w http.ResponseWriter, r *http.Request, msg string) {
 	// Ensure JSON content type in case upstream doesn't set it.
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	// Use the helper with explicit status code.
-	api.RespondWithStatusCode(w, r, api.Error(msg), status)
+	api.Respond(w, r, api.Error(msg))
 }
 
 // JSONNotImplemented is a helper to return 501 for unimplemented actions using the api envelope.
