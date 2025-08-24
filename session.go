@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 const sessionCookieName = "wb_sid"
@@ -15,6 +17,14 @@ type Session struct {
 	ID        string
 	CreatedAt time.Time
 	// TODO: add user info, role, active connection id, etc.
+	Conn *ActiveConnection
+}
+
+// ActiveConnection holds the per-session active DB connection.
+type ActiveConnection struct {
+	Driver string
+	DSN    string
+	DB     *gorm.DB
 }
 
 var (

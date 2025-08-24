@@ -16,6 +16,88 @@ type Handler struct {
 	profiles ConnectionStore
 }
 
+// handleConnect establishes a DB connection and stores it in the session.
+func (h *Handler) handleConnect(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		WriteError(w, r, "connect must be POST")
+		return
+	}
+	_ = r.ParseForm()
+	driver := strings.TrimSpace(r.Form.Get("driver"))
+	dsn := strings.TrimSpace(r.Form.Get("dsn"))
+	if err := h.ValidateDriver(driver); err != nil {
+		WriteError(w, r, err.Error())
+		return
+	}
+	if dsn == "" {
+		WriteError(w, r, "dsn is required")
+		return
+	}
+	db, err := OpenGORM(driver, dsn)
+	if err != nil {
+		WriteError(w, r, "open: "+err.Error())
+		return
+	}
+	if sqlDB, err2 := db.DB(); err2 != nil {
+		WriteError(w, r, "db handle: "+err2.Error())
+		return
+	} else if pingErr := sqlDB.Ping(); pingErr != nil {
+		WriteError(w, r, "ping: "+pingErr.Error())
+		return
+	}
+	s := EnsureSession(w, r, h.opts.SessionSecret)
+	s.Conn = &ActiveConnection{Driver: driver, DSN: dsn, DB: db}
+	WriteSuccessWithData(w, r, "connected", map[string]any{"driver": driver})
+}
+
+// handleDisconnect clears the active session connection.
+func (h *Handler) handleDisconnect(w http.ResponseWriter, r *http.Request) {
+	s := EnsureSession(w, r, h.opts.SessionSecret)
+	if s.Conn != nil {
+		if sqlDB, err := s.Conn.DB.DB(); err == nil {
+			_ = sqlDB.Close()
+		}
+	}
+	s.Conn = nil
+	WriteSuccess(w, r, http.StatusOK, "disconnected")
+}
+
+// handleProfiles lists saved profiles (GET) using the in-memory store for now.
+func (h *Handler) handleProfiles(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		WriteError(w, r, "profiles must be GET")
+		return
+	}
+	list := h.profiles.List()
+	WriteSuccessWithData(w, r, "ok", map[string]any{"profiles": list})
+}
+
+// handleProfilesSave saves a new profile (POST) in the in-memory store.
+func (h *Handler) handleProfilesSave(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		WriteError(w, r, "profiles_save must be POST")
+		return
+	}
+	_ = r.ParseForm()
+	name := strings.TrimSpace(r.Form.Get("name"))
+	driver := strings.TrimSpace(r.Form.Get("driver"))
+	dsn := strings.TrimSpace(r.Form.Get("dsn"))
+	if name == "" || driver == "" || dsn == "" {
+		WriteError(w, r, "name, driver and dsn are required")
+		return
+	}
+	if err := h.ValidateDriver(driver); err != nil {
+		WriteError(w, r, err.Error())
+		return
+	}
+	p := ConnectionProfile{ID: newRandomID(), Name: name, Driver: driver, DSN: dsn}
+	if err := h.profiles.Save(p); err != nil {
+		WriteError(w, r, err.Error())
+		return
+	}
+	WriteSuccessWithData(w, r, "saved", map[string]any{"profile": p})
+}
+
 // NewHandler constructs a new Handler with defaults applied.
 func NewHandler(o Options) http.Handler {
 	o = o.withDefaults()
@@ -66,7 +148,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	case "asset_js":
 		serveAsset(w, r, "assets/app.js", "application/javascript; charset=utf-8")
-		return
 	case "healthz":
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
@@ -76,17 +157,28 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ready"))
 		return
+	// --- Implemented actions ---
+	case "connect":
+		h.handleConnect(w, r)
+		return
+	case "disconnect":
+		h.handleDisconnect(w, r)
+		return
+	case "profiles":
+		h.handleProfiles(w, r)
+		return
+	case "profiles_save":
+		h.handleProfilesSave(w, r)
+		return
 	// --- Action stubs (to be implemented) ---
-	case "connect", "disconnect",
-		"list_schemas", "list_tables", "table_info", "view_definition",
+	case "list_schemas", "list_tables", "table_info", "view_definition",
 		"browse_rows",
 		"insert_row", "update_row", "delete_row",
 		"sql_execute", "sql_explain",
 		"list_saved_queries", "save_query",
 		"ddl_create_table", "ddl_alter_table", "ddl_drop_table",
 		"export", "import",
-		"login", "logout",
-		"profiles", "profiles_save":
+		"login", "logout":
 		JSONNotImplemented(w, action)
 		return
 	default:
