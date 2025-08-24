@@ -28,10 +28,10 @@ Build a modern, single-application, single-endpoint, web-based database admin to
 - Frontend: Server-rendered templates using HB (HTML Builder) utilities with embedded CSS/JS (no external packages/CDNs; no Tailwind build step)
 - Auth: Cookie-session with secure headers + optional OIDC
 - Config: Viper or envconfig
-- Logging: Zap or Zerolog (JSON logs)
+- Logging: Go slog (log/slog) for structured JSON logs
 - Migrations: None for user DBs; internal app migrations OK
 - Packaging: Docker + docker-compose
-- Testing: go test; Playwright/Cypress optional for UI smoke
+- Testing: go test , using only standard Go library
 - API responses: standardize JSON envelopes via github.com/dracory/api
 
 ## High-Level Architecture
@@ -48,7 +48,7 @@ Build a modern, single-application, single-endpoint, web-based database admin to
 ## Embeddable Module/SDK (Library Mode)
 - Goal: ship as an importable Go module that can be embedded into any Go web app, in addition to running as a standalone server.
 - Package layout:
-  - `module`: core types, services, interfaces, HTML templates, and an `http.Handler` implementation.
+  - Root package: core types, services, interfaces, HTML templates, and an `http.Handler` implementation.
   - `cmd/server`: thin binary that mounts the handler on a single endpoint path.
 - Public interfaces (examples):
   - `DriverRegistry` for enabling DB drivers.
@@ -85,7 +85,7 @@ Build a modern, single-application, single-endpoint, web-based database admin to
   import (
     "log"
     "net/http"
-    weebase "github.com/dracory/weebase/module"
+    weebase "github.com/dracory/weebase"
   )
 
   func main() {
@@ -330,3 +330,122 @@ All operations are handled through a single URL endpoint, controlled by the `act
 - Data diff across tables/environments
 - SSH tunnel per connection profile
 - Read-only share links for saved queries
+
+## Detailed Implementation Plan
+
+### Phase 0: Project Scaffolding & Foundations
+- [ ] Initialize module path `github.com/dracory/weebase` and baseline `go.mod`
+- [ ] Establish project layout: root package, `cmd/server/`, `templates/`, `assets/`, `docs/`
+- [ ] Add logging (Go slog) wrapper with request ID middleware
+- [ ] Add configuration loader (env + flags), defaults, and validation
+- [ ] Add security headers middleware (HSTS, CSP, X-Frame-Options, etc.)
+- [ ] Add session/cookie setup with configurable `SESSION_SECRET`
+- [ ] Embed assets/templates with `embed` and plumb override hooks
+
+### Phase 1: HTTP Handler and Single-Endpoint Router
+- [ ] Define `Options` and functional options in the root package
+- [ ] Implement `NewHandler(opts Options) http.Handler`
+- [ ] Implement action dispatcher based on `Options.ActionParam` (default `action`)
+- [ ] Define response helpers (HTML render, JSON envelope via `github.com/dracory/api`)
+- [ ] Add CSRF protection for POST actions
+
+### Phase 2: Driver Registry and Connection Management
+- [ ] Create `DriverRegistry` with enable/disable flags from `Options`
+- [ ] Support Postgres, MySQL/MariaDB, SQLite initially; optional SQL Server via flag
+- [ ] Implement `ConnectionStore` (in-memory first; pluggable interface)
+- [ ] Implement `connect` action: form/DSN parsing, validation, open DB with GORM
+- [ ] Add connection-in-session handling, ping/health checks
+- [ ] Add `DefaultConnection` and `PreconfiguredProfiles` boot logic
+- [ ] Implement `profiles` list/create actions (guarded by RBAC)
+
+### Phase 3: AuthN/Z and RBAC
+- [ ] Implement local auth (optional) with password hashing (bcrypt/argon2)
+- [ ] Wire OIDC (optional): config, callback, token validation
+- [ ] Define roles: Admin/User/Guest and `Authorizer` interface
+- [ ] Gate sensitive actions and profiles management by role
+- [ ] Rate-limit auth endpoints
+
+### Phase 4: Schema Discovery and Navigation
+- [ ] Implement dialect-aware metadata discovery (schemas, tables, views)
+- [ ] `list_schemas`, `list_tables`, `table_info`, `view_definition` actions
+- [ ] Standardize identifier quoting per dialect
+- [ ] Pagination and search for tables/views
+
+### Phase 5: Data Browsing and CRUD
+- [ ] `browse_rows` with server-side pagination, sort, basic filters
+- [ ] Safe default select limit (configurable)
+- [ ] Row view: type-aware renderers, null display, copy/download
+- [ ] `insert_row`, `update_row`, `delete_row` with transaction wrapping
+- [ ] Enforce safe mode confirmations on destructive ops
+
+### Phase 6: SQL Console
+- [ ] Textarea editor with run/cancel, transactional toggle
+- [ ] `sql_execute` and `sql_explain` actions with multi-statement support
+- [ ] Result tabs; CSV/JSON download of results
+- [ ] Saved queries per user/connection: list, save, delete
+
+### Phase 7: DDL Helpers
+- [ ] Table editor payload schema (create/alter/drop)
+- [ ] Preview SQL before apply; confirm under safe mode
+- [ ] Indexes and constraints management (MVP subset)
+
+### Phase 8: Import/Export
+- [ ] Export: CSV (streamed), JSON (NDJSON/array), SQL INSERTs (+ optional CREATE TABLE)
+- [ ] Import: CSV preview, column mapping, type coercion, transactional apply
+- [ ] Limits: `MAX_UPLOAD_SIZE_MB`, row limits, and per-row error report
+
+### Phase 9: UI/UX and Theming
+- [ ] Base layout with breadcrumbs, global quick search, responsive grid
+- [ ] Dark mode toggle; persist preference in session/local storage
+- [ ] Keyboard shortcuts: run query, save, paginate
+- [ ] Error surfaces with copy-to-clipboard diagnostics
+- [ ] Minimal theming API (title, logo, colors) + full override path
+
+### Phase 10: Observability and Ops
+- [ ] Structured JSON logs with request IDs; redact secrets
+- [ ] Metrics: request latency, error rates, rows returned, driver usage
+- [ ] Health endpoints: `/healthz`, `/readyz` (ping active connection)
+- [ ] Audit events: who, action, object, rows affected (avoid PII); pluggable `AuditSink`
+
+### Phase 11: Packaging & Deployment
+- [ ] Build the thin binary in `cmd/server` mounting `NewHandler`
+- [ ] Dockerfile (distroless or slim), non-root, healthcheck
+- [ ] docker-compose with sample Postgres/MySQL for demo
+- [ ] Reverse proxy examples (Caddy/Traefik/Nginx) with TLS
+
+### Phase 12: Testing Strategy
+- [ ] Unit tests: metadata discovery, query exec, safety rules
+- [ ] Integration tests: containers for Postgres/MySQL; SQLite in-memory
+- [ ] UI smoke tests (Playwright/Cypress): connect, browse, CRUD, SQL, import/export
+- [ ] Security tests: CSRF, auth flows, RBAC, safe mode enforcement
+
+### Phase 13: Documentation
+- [ ] README with quick start, config table, examples (embed + standalone)
+- [ ] SECURITY.md: threat model, safe mode, secrets handling
+- [ ] OPERATIONS.md: metrics, logs, backups for profiles/queries
+- [ ] DRIVER_NOTES.md: dialect quirks, feature coverage matrix
+
+### Phase 14: Versioning & Release
+- [ ] Tag v0.x pre-releases; document breaking changes
+- [ ] SemVer policy and changelog
+- [ ] Publish module; CI pipeline for tests/lint/build/release
+
+### Phase 15: Hardening and Nice-to-Haves
+- [ ] Read-only mode enforcement irrespective of DB grants
+- [ ] Query plan visualization (where supported)
+- [ ] ER diagram (read-only FK graph)
+- [ ] Data diff helpers across tables/environments
+- [ ] SSH tunnel support per profile (optional)
+- [ ] Read-only share links for saved queries
+
+### Acceptance Checklist (Traceability to Criteria)
+- [ ] Multi-DB connections; browse schemas/tables/views
+- [ ] CRUD rows; run SQL; import/export; basic DDL
+- [ ] Secure auth, CSRF protection, safe mode on by default
+- [ ] Works with PostgreSQL, MySQL/MariaDB, SQLite out of the box
+- [ ] Responsive UI with embedded CSS and dark mode
+- [ ] Structured logs, basic metrics, health endpoints
+- [ ] JSON responses use `github.com/dracory/api` envelope
+- [ ] Docker image + compose; example works end-to-end
+- [ ] Strong unit/integration coverage; UI smoke tests green
+- [ ] Published as a reusable Go module with a single `http.Handler` and `Register` helper
