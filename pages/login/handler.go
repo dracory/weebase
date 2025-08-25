@@ -2,11 +2,16 @@ package login
 
 import (
 	"bytes"
+	"embed"
 	"html/template"
 
+	"github.com/dracory/weebase/shared"
 	layout "github.com/dracory/weebase/shared/layout"
 	hb "github.com/gouniverse/hb"
 )
+
+//go:embed view.html
+var embeddedFS embed.FS
 
 // Handle renders the Adminer-style login/connect form page and returns full HTML.
 func Handle(
@@ -20,17 +25,18 @@ func Handle(
 	template.HTML,
 	error,
 ) {
-	data := map[string]any{
-		"Title":                 "Login",
-		"BasePath":              basePath,
-		"ActionParam":           actionParam,
-		"EnabledDrivers":        enabledDrivers,
-		"AllowAdHocConnections": allowAdHocConnections,
-		"SafeModeDefault":       safeModeDefault,
-		"CSRFToken":             csrfToken,
-	}
+	// data := map[string]any{
+	// 	"Title":                 "Login",
+	// 	"BasePath":              basePath,
+	// 	"ActionParam":           actionParam,
+	// 	"EnabledDrivers":        enabledDrivers,
+	// 	"AllowAdHocConnections": allowAdHocConnections,
+	// 	"SafeModeDefault":       safeModeDefault,
+	// 	"CSRFToken":             csrfToken,
+	// }
 
-	pageHTML, err := renderLoginContent(tmpl, data)
+	//pageHTML, err := renderLoginContent(tmpl, data)
+	pageHTML, err := view()
 	if err != nil {
 		return "", err
 	}
@@ -57,6 +63,14 @@ func Handle(
 		ExtraBodyEnd:    extraBody,
 	})
 	return full, nil
+}
+
+func view() (string, error) {
+	view, err := shared.EmbeddedFileToString(embeddedFS, "view.html")
+	if err != nil {
+		return "", err
+	}
+	return view, nil
 }
 
 // renderLoginContent renders the login page inner content template and returns safe HTML.

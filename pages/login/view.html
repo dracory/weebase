@@ -3,43 +3,88 @@
   <h2>Login</h2>
   <div class="wb-grid">
     <div>
-        <table class="wb-form">
+        <form method="post" action="{{.BasePath}}" onsubmit="return adminerSubmitFallback(this);">
+          <input type="hidden" name="{{.ActionParam}}" value="connect">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <input type="hidden" name="dsn" id="wb_dsn">
+          <table class="wb-form">
           <tr>
             <th>System</th>
             <td>
-              <select v-model="driver" required>
+              <select v-model="driver" name="driver" required>
                 {{range .EnabledDrivers}}<option value="{{.}}">{{.}}</option>{{end}}
               </select>
             </td>
           </tr>
           <tr>
             <th>Server</th>
-            <td><input v-model="server" placeholder="localhost"></td>
+            <td><input v-model="server" name="server" placeholder="localhost"></td>
           </tr>
           <tr>
             <th>Port</th>
-            <td><input v-model="port" placeholder="optional"></td>
+            <td><input v-model="port" name="port" placeholder="optional"></td>
           </tr>
           <tr>
             <th>Username</th>
-            <td><input v-model="username" autocomplete="username"></td>
+            <td><input v-model="username" name="username" autocomplete="username"></td>
           </tr>
           <tr>
             <th>Password</th>
-            <td><input type="password" v-model="password" autocomplete="current-password"></td>
+            <td><input type="password" v-model="password" name="password" autocomplete="current-password"></td>
           </tr>
           <tr>
             <th>Database</th>
-            <td><input v-model="database" placeholder="optional"></td>
+            <td><input v-model="database" name="database" placeholder="optional"></td>
           </tr>
           <tr>
             <td></td>
             <td>
-              <button type="button" @click="submit">Login</button>
-              <label style="margin-left:1em"><input type="checkbox" v-model="remember" value="1"> Permanent login</label>
+              <button type="submit" @click="submit">Login</button>
+              <label style="margin-left:1em"><input type="checkbox" v-model="remember" name="remember" value="1"> Permanent login</label>
             </td>
           </tr>
-        </table>
+          </table>
+        </form>
+        <script>
+        // Fallback when Vue is not available: construct DSN and allow native form submit
+        function adminerSubmitFallback(form){
+          if (window.Vue) { return false; } // Vue handles via fetch
+          try {
+            var drv = (form.driver && form.driver.value || '').toLowerCase();
+            var server = form.server && form.server.value || '';
+            var port = form.port && form.port.value || '';
+            var username = form.username && form.username.value || '';
+            var password = form.password && form.password.value || '';
+            var database = form.database && form.database.value || '';
+            var hostPort = server + (port ? ':' + port : '');
+            var dsn = '';
+            if (drv === 'postgres' || drv === 'pg' || drv === 'postgresql') {
+              var parts = [];
+              if (server) parts.push('host=' + server);
+              if (username) parts.push('user=' + username);
+              if (password) parts.push('password=' + password);
+              if (database) parts.push('dbname=' + database);
+              if (port) parts.push('port=' + port);
+              parts.push('sslmode=disable');
+              dsn = parts.join(' ');
+            } else if (drv === 'mysql' || drv === 'mariadb') {
+              var auth = (username || password) ? (username + ':' + password) : username;
+              var dbpart = database ? ('/' + database) : '';
+              dsn = auth + '@tcp(' + hostPort + ')' + dbpart + '?parseTime=true';
+            } else if (drv === 'sqlite' || drv === 'sqlite3') {
+              dsn = database || ':memory:';
+            } else if (drv === 'sqlserver' || drv === 'mssql') {
+              var enc = encodeURIComponent;
+              var auth2 = (username || password) ? (enc(username) + ':' + enc(password) + '@') : '';
+              var qp = database ? ('?database=' + enc(database)) : '';
+              dsn = 'sqlserver://' + auth2 + hostPort + qp;
+            }
+            var dsnInput = document.getElementById('wb_dsn');
+            if (dsnInput) dsnInput.value = dsn;
+            return true;
+          } catch(e) { return true; }
+        }
+        </script>
     </div>
   </div>
 </section>

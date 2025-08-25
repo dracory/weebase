@@ -236,7 +236,7 @@ func (h *Handler) handleHome(w http.ResponseWriter, r *http.Request, csrfToken s
 		return
 	}
 	// Wrap with shared layout
-	full := layout.Render("Home", h.opts.BasePath, h.opts.SafeModeDefault, template.HTML(buf.String()), nil, nil)
+	full := layout.Render("Home", h.opts.BasePath, h.opts.SafeModeDefault, buf.String(), nil, nil)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = w.Write([]byte(full))
 }

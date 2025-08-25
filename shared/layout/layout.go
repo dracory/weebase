@@ -11,7 +11,7 @@ type Options struct {
 	Title           string
 	BasePath        string
 	SafeModeDefault bool
-	MainHTML        template.HTML
+	MainHTML        string
 	ExtraHead       []hb.TagInterface
 	ExtraBodyEnd    []hb.TagInterface
 }
@@ -23,7 +23,7 @@ type Options struct {
 // - mainHTML: the pre-rendered inner HTML for the main content area
 // - extraHead: optional extra <head> tags for page-specific assets
 // - extraBodyEnd: optional extra tags right before </body> (e.g., scripts)
-func Render(title, basePath string, safeModeDefault bool, mainHTML template.HTML, extraHead []hb.TagInterface, extraBodyEnd []hb.TagInterface) template.HTML {
+func Render(title, basePath string, safeModeDefault bool, mainHTML string, extraHead []hb.TagInterface, extraBodyEnd []hb.TagInterface) template.HTML {
 	return RenderWith(Options{
 		Title:           title,
 		BasePath:        basePath,
@@ -41,7 +41,7 @@ func RenderWith(o Options) template.HTML {
 		hb.NewTag("meta").Attr("charset", "utf-8"),
 		hb.NewTag("meta").Attr("name", "viewport").Attr("content", "width=device-width, initial-scale=1"),
 		hb.NewTag("title").Text(o.Title + " · WeeBase"),
-		hb.StyleURL(o.BasePath+"?action=asset_css"),
+		hb.StyleURL(o.BasePath + "?action=asset_css"),
 	}
 	if len(o.ExtraHead) > 0 {
 		headChildren = append(headChildren, o.ExtraHead...)
@@ -50,8 +50,8 @@ func RenderWith(o Options) template.HTML {
 	// Header/nav
 	nav := hb.Nav().Class("wb-nav").Children([]hb.TagInterface{
 		hb.A().Href(o.BasePath).Text("Home"),
-		hb.A().Href(o.BasePath+"?action=healthz").Text("Health"),
-		hb.A().Href(o.BasePath+"?action=readyz").Text("Ready"),
+		hb.A().Href(o.BasePath + "?action=healthz").Text("Health"),
+		hb.A().Href(o.BasePath + "?action=readyz").Text("Ready"),
 	})
 	header := hb.Header().Class("wb-header").Child(
 		hb.Div().Class("wb-container").Children([]hb.TagInterface{
@@ -73,7 +73,7 @@ func RenderWith(o Options) template.HTML {
 		header,
 		main,
 		footer,
-		hb.ScriptURL(o.BasePath+"?action=asset_js"),
+		hb.ScriptURL(o.BasePath + "?action=asset_js"),
 	}
 	if len(o.ExtraBodyEnd) > 0 {
 		bodyChildren = append(bodyChildren, o.ExtraBodyEnd...)
