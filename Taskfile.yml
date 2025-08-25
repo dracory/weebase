@@ -1,0 +1,27 @@
+version: '3'
+
+vars:
+  # You can override these when running, e.g. `APP_ENV=development task dev`
+  APP_ENV: development
+
+# Default task when running just `task`
+# tasks.default depends on `dev` so `task` starts the server.
+tasks:
+  default:
+    desc: Start the server (alias to dev)
+    cmds:
+      - task: dev
+
+  dev:
+    desc: Run the Go server with Air (live reload)
+    env:
+      APP_ENV: "{{.APP_ENV}}"
+    cmds:
+      - air -c ./.air.toml
+    silent: false
+
+  setup:air:
+    desc: Install Air live-reload tool
+    cmds:
+      - go install github.com/air-verse/air@latest
+    silent: false

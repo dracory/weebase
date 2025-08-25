@@ -1,4 +1,3 @@
-{{define "pages/login/content"}}
 <section id="loginApp" data-basepath="{{.BasePath}}" data-actionparam="{{.ActionParam}}" data-csrf="{{.CSRFToken}}">
   <h2>Login</h2>
   <div class="wb-grid">
@@ -12,7 +11,10 @@
             <th>System</th>
             <td>
               <select v-model="driver" name="driver" required>
-                {{range .EnabledDrivers}}<option value="{{.}}">{{.}}</option>{{end}}
+                <option value="postgres">PostgreSQL</option>
+                <option value="mysql">MySQL</option>
+                <option value="sqlite">SQLite</option>
+                <option value="sqlserver">SQL Server</option>
               </select>
             </td>
           </tr>
@@ -45,47 +47,6 @@
           </tr>
           </table>
         </form>
-        <script>
-        // Fallback when Vue is not available: construct DSN and allow native form submit
-        function adminerSubmitFallback(form){
-          if (window.Vue) { return false; } // Vue handles via fetch
-          try {
-            var drv = (form.driver && form.driver.value || '').toLowerCase();
-            var server = form.server && form.server.value || '';
-            var port = form.port && form.port.value || '';
-            var username = form.username && form.username.value || '';
-            var password = form.password && form.password.value || '';
-            var database = form.database && form.database.value || '';
-            var hostPort = server + (port ? ':' + port : '');
-            var dsn = '';
-            if (drv === 'postgres' || drv === 'pg' || drv === 'postgresql') {
-              var parts = [];
-              if (server) parts.push('host=' + server);
-              if (username) parts.push('user=' + username);
-              if (password) parts.push('password=' + password);
-              if (database) parts.push('dbname=' + database);
-              if (port) parts.push('port=' + port);
-              parts.push('sslmode=disable');
-              dsn = parts.join(' ');
-            } else if (drv === 'mysql' || drv === 'mariadb') {
-              var auth = (username || password) ? (username + ':' + password) : username;
-              var dbpart = database ? ('/' + database) : '';
-              dsn = auth + '@tcp(' + hostPort + ')' + dbpart + '?parseTime=true';
-            } else if (drv === 'sqlite' || drv === 'sqlite3') {
-              dsn = database || ':memory:';
-            } else if (drv === 'sqlserver' || drv === 'mssql') {
-              var enc = encodeURIComponent;
-              var auth2 = (username || password) ? (enc(username) + ':' + enc(password) + '@') : '';
-              var qp = database ? ('?database=' + enc(database)) : '';
-              dsn = 'sqlserver://' + auth2 + hostPort + qp;
-            }
-            var dsnInput = document.getElementById('wb_dsn');
-            if (dsnInput) dsnInput.value = dsn;
-            return true;
-          } catch(e) { return true; }
-        }
-        </script>
     </div>
   </div>
 </section>
-{{end}}

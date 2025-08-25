@@ -1,0 +1,18 @@
+# Air configuration for live-reloading the Go server
+# Docs: https://github.com/air-verse/air
+
+root = "."
+tmp_dir = "tmp"
+
+[log]
+  time = true
+
+[build]
+  # Build the server from cmd/server to a tmp binary
+  cmd = "go build -o ./tmp/server.exe ./cmd/server"
+  bin = "tmp/server.exe"
+  include_ext = ["go", "tpl", "tmpl", "html", "gohtml", "css", "js"]
+  exclude_dir = ["tmp", "vendor", "node_modules", ".git"]
+  delay = 1000
+  send_interrupt = true
+  stop_on_error = true
