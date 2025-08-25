@@ -1,0 +1,54 @@
+{{define "pages/login/content"}}
+<section id="loginApp" data-basepath="{{.BasePath}}" data-actionparam="{{.ActionParam}}" data-csrf="{{.CSRFToken}}">
+  <h2>Login</h2>
+  <div class="wb-grid">
+    <div>
+      <p><strong>WeeBase</strong> Admin UI</p>
+      <ul>
+        <li>(MySQL) root</li>
+        <li>(PostgreSQL) postgres</li>
+        <li>(MS SQL) sa</li>
+      </ul>
+    </div>
+    <div>
+        <table class="wb-form">
+          <tr>
+            <th>System</th>
+            <td>
+              <select v-model="driver" required>
+                {{range .EnabledDrivers}}<option value="{{.}}">{{.}}</option>{{end}}
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <th>Server</th>
+            <td><input v-model="server" placeholder="localhost"></td>
+          </tr>
+          <tr>
+            <th>Port</th>
+            <td><input v-model="port" placeholder="optional"></td>
+          </tr>
+          <tr>
+            <th>Username</th>
+            <td><input v-model="username" autocomplete="username"></td>
+          </tr>
+          <tr>
+            <th>Password</th>
+            <td><input type="password" v-model="password" autocomplete="current-password"></td>
+          </tr>
+          <tr>
+            <th>Database</th>
+            <td><input v-model="database" placeholder="optional"></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <button type="button" @click="submit">Login</button>
+              <label style="margin-left:1em"><input type="checkbox" v-model="remember" value="1"> Permanent login</label>
+            </td>
+          </tr>
+        </table>
+    </div>
+  </div>
+</section>
+{{end}}

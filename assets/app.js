@@ -55,7 +55,8 @@ console.log("WeeBase assets loaded");
       form.querySelector('[name="dsn"]').value = dsn;
 
       const fd = new FormData(form);
-      const resp = await fetch(form.action, {
+      const actionURL = form.getAttribute('action');
+      const resp = await fetch(actionURL, {
         method: "POST",
         body: fd,
         credentials: "same-origin",
@@ -63,7 +64,7 @@ console.log("WeeBase assets loaded");
       const data = await resp.json().catch(() => null);
       if (resp.ok && data && (data.status === "success" || data.ok)) {
         // Redirect to home
-        window.location.href = form.action;
+        window.location.href = actionURL;
       } else {
         const msg = (data && (data.message || data.error)) || `HTTP ${resp.status}`;
         alert("Connect failed: " + msg);

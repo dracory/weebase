@@ -1,11 +1,15 @@
 package weebase
 
 import (
+	"bytes"
 	"html/template"
 	"log"
 	"net/http"
 	"path"
 	"strings"
+
+	loginpage "github.com/dracory/weebase/pages/login"
+	layout "github.com/dracory/weebase/shared/layout"
 )
 
 // Handler implements http.Handler for the single-endpoint router controlled by a query action.
@@ -14,50 +18,6 @@ type Handler struct {
 	tmplBase *template.Template
 	drivers  *DriverRegistry
 	profiles ConnectionStore
-}
-
-// handleInsertRow is implemented in `handler_insert_row.go`.
-
-// handleUpdateRow is implemented in `handler_update_row.go`.
-
-// splitCSV splits by comma and trims spaces; ignores empty items
-func splitCSV(s string) []string {
-    if s == "" {
-        return nil
-    }
-    parts := strings.Split(s, ",")
-    out := make([]string, 0, len(parts))
-    for _, p := range parts {
-        t := strings.TrimSpace(p)
-        if t != "" {
-            out = append(out, t)
-        }
-    }
-    return out
-}
-
-// handleDeleteRow is implemented in `handler_delete_row.go`.
-
-// handleRowView is implemented in `handler_row_view.go`.
-
-// handleViewDefinition is implemented in `handler_view_definition.go`.
-
-// handleTableInfo is implemented in `handler_table_info.go`.
-
-// handleBrowseRows is implemented in `handler_browse_rows.go`.
-
-// sanitizeIdent allows only letters, digits, underscore and dot.
-func sanitizeIdent(s string) bool {
-	if s == "" {
-		return false
-	}
-	for _, r := range s {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == '.' {
-			continue
-		}
-		return false
-	}
-	return true
 }
 
 // tryAutoConnect opens and pings a DB, then stores it into the session.
@@ -76,14 +36,6 @@ func (h *Handler) tryAutoConnect(s *Session, driver, dsn string) error {
 	s.Conn = &ActiveConnection{Driver: driver, DSN: dsn, DB: db}
 	return nil
 }
-
-// handleConnect is implemented in `handler_connect.go`.
-
-// handleDisconnect is implemented in `handler_disconnect.go`.
-
-// handleProfiles is implemented in `handler_profiles.go`.
-
-// handleProfilesSave is implemented in `handler_profiles_save.go`.
 
 // NewHandler constructs a new Handler with defaults applied.
 func NewHandler(o Options) http.Handler {
@@ -116,7 +68,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("X-Frame-Options", "DENY")
 	w.Header().Set("Referrer-Policy", "no-referrer")
-	w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'")
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://unpkg.com")
 
 	// Ensure a session exists (sets cookie if missing)
 	s := EnsureSession(w, r, h.opts.SessionSecret)
@@ -140,17 +92,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-    // If no active connection, redirect GET requests to login except for public assets/health
-    action := r.URL.Query().Get(h.opts.ActionParam)
-    if s.Conn == nil && r.Method == http.MethodGet {
-        switch action {
-        case ActionLogin, ActionAssetCSS, ActionAssetJS, ActionHealthz, ActionReadyz:
-            // allow
-        default:
-            http.Redirect(w, r, h.opts.BasePath+"?"+h.opts.ActionParam+"="+ActionLogin, http.StatusFound)
-            return
-        }
-    }
+	// If no active connection, redirect GET requests to login except for public assets/health
+	action := r.URL.Query().Get(h.opts.ActionParam)
+	if s.Conn == nil && r.Method == http.MethodGet {
+		switch action {
+		case ActionLogin, ActionAssetCSS, ActionAssetJS, ActionHealthz, ActionReadyz, ActionLoginJS, ActionLoginCSS:
+			// allow
+		default:
+			http.Redirect(w, r, h.opts.BasePath+"?"+h.opts.ActionParam+"="+ActionLogin, http.StatusFound)
+			return
+		}
+	}
 	switch action {
 	case "", ActionHome:
 		h.handleHome(w, r, csrfToken)
@@ -160,6 +112,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	case ActionAssetJS:
 		serveAsset(w, r, AssetPathJS, ContentTypeJS)
+		return
+	case ActionLoginCSS:
+		serveAsset(w, r, LoginAssetPathCSS, ContentTypeCSS)
+		return
+	case ActionLoginJS:
+		serveAsset(w, r, LoginAssetPathJS, ContentTypeJS)
 		return
 	case ActionHealthz:
 		w.WriteHeader(http.StatusOK)
@@ -180,7 +138,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	// --- Implemented actions ---
 	case ActionLogin:
-		h.handleLogin(w, r, csrfToken)
+		// Render login page via pages/login package
+		full, err := loginpage.Handle(h.tmplBase, h.opts.BasePath, h.opts.ActionParam, h.drivers.List(), h.opts.AllowAdHocConnections, h.opts.SafeModeDefault, csrfToken)
+		if err != nil {
+			log.Printf("render login: %v", err)
+			h.renderStatus(w, r, http.StatusInternalServerError, "template error")
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(full))
 		return
 	case ActionConnect:
 		h.handleConnect(w, r)
@@ -202,15 +168,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	case ActionRowView:
 		h.handleRowView(w, r)
-    case ActionDeleteRow:
-        h.handleDeleteRow(w, r)
-        return
-    case ActionInsertRow:
-        h.handleInsertRow(w, r)
-        return
-    case ActionUpdateRow:
-        h.handleUpdateRow(w, r)
-        return
+	case ActionDeleteRow:
+		h.handleDeleteRow(w, r)
+		return
+	case ActionInsertRow:
+		h.handleInsertRow(w, r)
+		return
+	case ActionUpdateRow:
+		h.handleUpdateRow(w, r)
+		return
 	case ActionViewDefinition:
 		h.handleViewDefinition(w, r)
 		return
@@ -260,11 +226,17 @@ func (h *Handler) handleHome(w http.ResponseWriter, r *http.Request, csrfToken s
 		"CSRFToken":             csrfToken,
 		"Conn":                  connInfo,
 	}
-	if err := h.tmplBase.ExecuteTemplate(w, "index.gohtml", data); err != nil {
-		log.Printf("render home: %v", err)
+	// Render content-only template into buffer
+	var buf bytes.Buffer
+	if err := h.tmplBase.ExecuteTemplate(&buf, "index_content", data); err != nil {
+		log.Printf("render home content: %v", err)
 		h.renderStatus(w, r, http.StatusInternalServerError, "template error")
 		return
 	}
+	// Wrap with shared layout
+	full := layout.Render("Home", h.opts.BasePath, h.opts.SafeModeDefault, template.HTML(buf.String()), nil, nil)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write([]byte(full))
 }
 
 func (h *Handler) renderStatus(w http.ResponseWriter, r *http.Request, code int, msg string) {
@@ -288,46 +260,3 @@ func serveAsset(w http.ResponseWriter, r *http.Request, assetPath, contentType s
 // handleListSchemas is implemented in `handler_list_schemas.go`.
 
 // handleListTables is implemented in `handler_list_tables.go`.
-
-func normalizeDriver(d string) string {
-	switch strings.ToLower(d) {
-	case "pg", "postgresql":
-		return "postgres"
-	case "mariadb":
-		return "mysql"
-	case "sqlite3":
-		return "sqlite"
-	case "mssql":
-		return "sqlserver"
-	default:
-		return strings.ToLower(d)
-	}
-}
-
-// quoteIdent safely quotes a possibly schema-qualified identifier for the given driver.
-// It assumes parts have already passed sanitizeIdent (letters/digits/underscore/dot).
-// This is a best-effort helper for building simple SQL strings.
-func quoteIdent(driver, ident string) string {
-	d := normalizeDriver(driver)
-	// split by '.' to support schema.table
-	parts := strings.Split(ident, ".")
-	for i, p := range parts {
-		switch d {
-		case "postgres":
-			// escape double quotes by doubling them
-			p = strings.ReplaceAll(p, "\"", "\"\"")
-			parts[i] = "\"" + p + "\""
-		case "mysql", "sqlite":
-			// escape backticks by doubling them
-			p = strings.ReplaceAll(p, "`", "``")
-			parts[i] = "`" + p + "`"
-		case "sqlserver":
-			// escape ']' by doubling it
-			p = strings.ReplaceAll(p, "]", "]]")
-			parts[i] = "[" + p + "]"
-		default:
-			parts[i] = p
-		}
-	}
-	return strings.Join(parts, ".")
-}

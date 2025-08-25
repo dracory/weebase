@@ -1,0 +1,13 @@
+/* Login page specific styles */
+.wb-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1rem;
+}
+.wb-form th {
+  text-align: left;
+  padding-right: .75rem;
+}
+.wb-form td {
+  padding: .25rem 0;
+}

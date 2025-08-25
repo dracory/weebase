@@ -10,6 +10,8 @@ const (
 
 	ActionLogin           = "login"
 	ActionLogout          = "logout"
+	ActionLoginJS         = "login_js"
+	ActionLoginCSS        = "login_css"
 
 	ActionConnect         = "connect"
 	ActionDisconnect      = "disconnect"
@@ -47,4 +49,7 @@ const (
 	AssetPathJS   = "assets/app.js"
 	ContentTypeCSS = "text/css; charset=utf-8"
 	ContentTypeJS  = "application/javascript; charset=utf-8"
+
+	LoginAssetPathJS  = "pages/login/script.js"
+	LoginAssetPathCSS = "pages/login/styles.css"
 )
