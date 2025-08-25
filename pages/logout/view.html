@@ -1,0 +1,11 @@
+{{define "pages/logout/content"}}
+<section>
+  <h2>Logged out</h2>
+  <p>You have been logged out. Any active database connection has been cleared.</p>
+  <p>
+    <a href="{{.BasePath}}?{{.ActionParam}}=login">Go to Login</a>
+    ·
+    <a href="{{.BasePath}}">Home</a>
+  </p>
+</section>
+{{end}}

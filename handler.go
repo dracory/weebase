@@ -148,6 +148,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write([]byte(full))
 		return
+	case ActionLogout:
+		h.handleLogout(w, r, csrfToken)
+		return
 	case ActionConnect:
 		h.handleConnect(w, r)
 		return
@@ -190,8 +193,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case ActionSQLExecute, ActionSQLExplain,
 		ActionListSaved, ActionSaveQuery,
 		ActionDDLCreateTable, ActionDDLAlterTable, ActionDDLDropTable,
-		ActionExport, ActionImport,
-		ActionLogout:
+		ActionExport, ActionImport:
 		// handle implemented SQL console actions
 		if action == ActionSQLExecute {
 			h.handleSQLExecute(w, r)
