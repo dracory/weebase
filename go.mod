@@ -5,6 +5,7 @@ go 1.24.5
 require (
 	github.com/dracory/api v1.7.0
 	github.com/dracory/env v0.5.0
+	github.com/gouniverse/hb v1.83.4
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/driver/sqlite v1.5.7
@@ -22,7 +23,6 @@ require (
 	github.com/gouniverse/crypto v0.2.0 // indirect
 	github.com/gouniverse/dataobject v1.2.0 // indirect
 	github.com/gouniverse/envenc v0.10.0 // indirect
-	github.com/gouniverse/hb v1.83.4 // indirect
 	github.com/gouniverse/uid v1.5.0 // indirect
 	github.com/gouniverse/webserver v0.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
