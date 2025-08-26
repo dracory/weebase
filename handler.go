@@ -12,8 +12,10 @@ import (
 
 	"gorm.io/gorm"
 
-	apipkg "github.com/dracory/weebase/api"
-	apitablecreate "github.com/dracory/weebase/api/api_table_create"
+	apischemas "github.com/dracory/weebase/api/api_schemas_list"
+	apiTableCreate "github.com/dracory/weebase/api/api_table_create"
+	apirows "github.com/dracory/weebase/api/rows_browse"
+	apitables "github.com/dracory/weebase/api/tables_list"
 	pageHome "github.com/dracory/weebase/pages/page_home"
 	pageLogin "github.com/dracory/weebase/pages/page_login"
 	pageLogout "github.com/dracory/weebase/pages/page_logout"
@@ -270,64 +272,41 @@ func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken str
 		// Connection/API operations
 		constants.ActionConnect:    func(w http.ResponseWriter, r *http.Request) { h.handleConnect(w, r) },
 		constants.ActionDisconnect: func(w http.ResponseWriter, r *http.Request) { h.handleDisconnect(w, r) },
-		// Listing and data APIs
-		constants.ActionListSchemas: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.SchemasList(func(w http.ResponseWriter, r *http.Request) { h.handleListSchemas(w, r) })(w, r)
-		},
-		constants.ActionListTables: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.TablesList(func(w http.ResponseWriter, r *http.Request) { h.handleListTables(w, r) })(w, r)
-		},
-		constants.ActionSchemasList: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.SchemasList(func(w http.ResponseWriter, r *http.Request) { h.handleListSchemas(w, r) })(w, r)
-		},
-		constants.ActionTablesList: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.TablesList(func(w http.ResponseWriter, r *http.Request) { h.handleListTables(w, r) })(w, r)
-		},
-		constants.ActionTableInfo: func(w http.ResponseWriter, r *http.Request) { h.handleTableInfo(w, r) },
-		constants.ActionBrowseRows: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.RowsBrowse(func(w http.ResponseWriter, r *http.Request) { h.handleBrowseRows(w, r) })(w, r)
-		},
-		constants.ActionRowsBrowse: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.RowsBrowse(func(w http.ResponseWriter, r *http.Request) { h.handleBrowseRows(w, r) })(w, r)
-		},
-		constants.ActionRowView: func(w http.ResponseWriter, r *http.Request) { h.handleRowView(w, r) },
-		constants.ActionDeleteRow: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.DeleteRow(func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) })(w, r)
-		},
-		constants.ActionRowDelete: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.DeleteRow(func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) })(w, r)
-		},
-		constants.ActionInsertRow: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.InsertRow(func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) })(w, r)
-		},
-		constants.ActionRowInsert: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.InsertRow(func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) })(w, r)
-		},
-		constants.ActionUpdateRow: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.UpdateRow(func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) })(w, r)
-		},
-		constants.ActionRowUpdate: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.UpdateRow(func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) })(w, r)
-		},
-		// constants.ActionViewDefinition: func(w http.ResponseWriter, r *http.Request) { h.handleViewDefinition(w, r) },
-		constants.ActionProfiles: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.Profiles(func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) })(w, r)
-		},
-		constants.ActionProfilesList: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.Profiles(func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) })(w, r)
-		},
-		constants.ActionProfilesSave: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.ProfilesSave(func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) })(w, r)
-		},
-		constants.ActionProfileSave: func(w http.ResponseWriter, r *http.Request) {
-			apipkg.ProfilesSave(func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) })(w, r)
-		},
+
+		// Schema and table operations
+		constants.ActionListSchemas: apischemas.New(s.Conn).Handle,
+		constants.ActionSchemasList: apischemas.New(s.Conn).Handle,
+		constants.ActionListTables:  apitables.New(s.Conn).Handle,
+		constants.ActionTablesList:  apitables.New(s.Conn).Handle,
+		constants.ActionTableInfo:   func(w http.ResponseWriter, r *http.Request) { h.handleTableInfo(w, r) },
+
+		// Row operations
+		constants.ActionBrowseRows: apirows.New(s.Conn).Handle,
+		constants.ActionRowsBrowse: apirows.New(s.Conn).Handle,
+		constants.ActionRowView:    func(w http.ResponseWriter, r *http.Request) { h.handleRowView(w, r) },
+		constants.ActionDeleteRow:  func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
+		constants.ActionRowDelete:  func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
+		constants.ActionInsertRow:  func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) },
+		constants.ActionRowInsert:  func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) },
+		constants.ActionUpdateRow:  func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) },
+		constants.ActionRowUpdate:  func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) },
+
+		// Profiles
+		constants.ActionProfiles:     func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) },
+		constants.ActionProfilesList: func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) },
+		constants.ActionProfilesSave: func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) },
+		constants.ActionProfileSave:  func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) },
+
+		// SQL operations
 		constants.ActionSQLExecute: func(w http.ResponseWriter, r *http.Request) { h.handleSQLExecute(w, r) },
 		constants.ActionSQLExplain: func(w http.ResponseWriter, r *http.Request) { h.handleSQLExplain(w, r) },
-		// New explicit API handler for table create
-		constants.ActionApiTableCreate: apitablecreate.New(s.Conn).Handle,
-		constants.ActionExport:         func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionExport) },
-		constants.ActionImport:         func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionImport) },
+
+		// Table operations
+		constants.ActionApiTableCreate: apiTableCreate.New(s.Conn).Handle,
+
+		// Import/Export (not implemented yet)
+		constants.ActionExport: func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionExport) },
+		constants.ActionImport: func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionImport) },
 	}
 }
 
