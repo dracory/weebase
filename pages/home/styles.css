@@ -1,0 +1,3 @@
+.home-objects ul{ list-style: disc inside; }
+.home-objects a{ color: inherit; }
+.home-objects a:hover{ text-decoration: underline; }

@@ -4,11 +4,17 @@ import (
 	"bytes"
 	"html/template"
 
+	"embed"
+	"github.com/dracory/weebase/shared"
 	"github.com/dracory/weebase/shared/constants"
 	layout "github.com/dracory/weebase/shared/layout"
 	"github.com/dracory/weebase/shared/urls"
 	hb "github.com/gouniverse/hb"
+	"github.com/gouniverse/cdn"
 )
+
+//go:embed script.js styles.css
+var embeddedFS embed.FS
 
 // Handle renders the Home page using the shared index content template and returns full HTML.
 func Handle(
@@ -23,6 +29,10 @@ func Handle(
 	template.HTML,
 	error,
 ) {
+	// Load page assets (styles + JS)
+	pageCSS, _ := shared.EmbeddedFileToString(embeddedFS, "styles.css")
+	pageJS, _ := shared.EmbeddedFileToString(embeddedFS, "script.js")
+
 	data := map[string]any{
 		"Title":                 "WeeBase",
 		"BasePath":              basePath,
@@ -65,27 +75,28 @@ func Handle(
 		objects,
 	}).ToHTML()
 
-	// Prepare sidebar hydration script: fetch real tables and render links
+	// Extra head and body similar to login page
+	extraHead := []hb.TagInterface{hb.Style(pageCSS)}
+
 	listURL := urls.URL(basePath, constants.ActionListTables, nil)
 	browseBase := urls.URL(basePath, constants.ActionBrowseRows, nil)
-	hydrate := hb.Script("(function(){\n" +
-		"  var el=document.getElementById('wb-objects'); if(!el) return;\n" +
-		"  fetch('" + template.JSEscapeString(listURL) + "', {credentials:'same-origin'})\n" +
-		"    .then(function(r){return r.json()}).then(function(d){\n" +
-		"      if(!d||!d.data||!Array.isArray(d.data.tables)) return;\n" +
-		"      el.innerHTML='';\n" +
-		"      var base='" + template.JSEscapeString(browseBase) + "';\n" +
-		"      d.data.tables.forEach(function(t){\n" +
-		"        var li=document.createElement('li');\n" +
-		"        var a=document.createElement('a');\n" +
-		"        a.textContent='select '+t;\n" +
-		"        a.href=base + (base.indexOf('?')>-1?'&':'?') + 'table=' + encodeURIComponent(t);\n" +
-		"        a.className='hover:underline';\n" +
-		"        li.appendChild(a);\n" +
-		"        el.appendChild(li);\n" +
-		"      });\n" +
-		"    }).catch(function(){});\n" +
-		"})();")
+	sqlURL := urls.URL(basePath, constants.ActionSQLExecute, nil)
+	createTableURL := urls.URL(basePath, constants.ActionDDLCreateTable, nil)
+	importURL := urls.URL(basePath, constants.ActionImport, nil)
+	exportURL := urls.URL(basePath, constants.ActionExport, nil)
+
+	extraBody := []hb.TagInterface{
+		hb.ScriptURL(cdn.VueJs_3()),
+		hb.ScriptURL(cdn.Sweetalert2_11()),
+		hb.Script(`window.urlListTables = "` + template.JSEscapeString(listURL) + `"`),
+		hb.Script(`window.urlBrowseRows = "` + template.JSEscapeString(browseBase) + `"`),
+		hb.Script(`window.urlSqlExecute = "` + template.JSEscapeString(sqlURL) + `"`),
+		hb.Script(`window.urlCreateTable = "` + template.JSEscapeString(createTableURL) + `"`),
+		hb.Script(`window.urlImport = "` + template.JSEscapeString(importURL) + `"`),
+		hb.Script(`window.urlExport = "` + template.JSEscapeString(exportURL) + `"`),
+		hb.Script(`window.csrfToken = "` + template.JSEscapeString(csrfToken) + `"`),
+		hb.Script(pageJS),
+	}
 
 	// Wrap with shared layout
 	full := layout.RenderWith(layout.Options{
@@ -94,7 +105,8 @@ func Handle(
 		SafeModeDefault: safeModeDefault,
 		MainHTML:        buf.String(),
 		SidebarHTML:     sidebarHTML,
-		ExtraBodyEnd:    []hb.TagInterface{hydrate},
+		ExtraHead:       extraHead,
+		ExtraBodyEnd:    extraBody,
 	})
 	return full, nil
 }
