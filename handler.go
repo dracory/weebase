@@ -12,10 +12,10 @@ import (
 
 	"gorm.io/gorm"
 
-	apischemas "github.com/dracory/weebase/api/api_schemas_list"
+	apiSchemasList "github.com/dracory/weebase/api/api_schemas_list"
 	apiTableCreate "github.com/dracory/weebase/api/api_table_create"
-	apirows "github.com/dracory/weebase/api/rows_browse"
-	apitables "github.com/dracory/weebase/api/tables_list"
+	apiRowsBrowse "github.com/dracory/weebase/api/rows_browse"
+	apiTablesList "github.com/dracory/weebase/api/tables_list"
 	pageHome "github.com/dracory/weebase/pages/page_home"
 	pageLogin "github.com/dracory/weebase/pages/page_login"
 	pageLogout "github.com/dracory/weebase/pages/page_logout"
@@ -274,15 +274,15 @@ func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken str
 		constants.ActionDisconnect: func(w http.ResponseWriter, r *http.Request) { h.handleDisconnect(w, r) },
 
 		// Schema and table operations
-		constants.ActionListSchemas: apischemas.New(s.Conn).Handle,
-		constants.ActionSchemasList: apischemas.New(s.Conn).Handle,
-		constants.ActionListTables:  apitables.New(s.Conn).Handle,
-		constants.ActionTablesList:  apitables.New(s.Conn).Handle,
+		constants.ActionListSchemas: apiSchemasList.New(s.Conn).Handle,
+		constants.ActionSchemasList: apiSchemasList.New(s.Conn).Handle,
+		constants.ActionListTables:  apiTablesList.New(s.Conn).Handle,
+		constants.ActionTablesList:  apiTablesList.New(s.Conn).Handle,
 		constants.ActionTableInfo:   func(w http.ResponseWriter, r *http.Request) { h.handleTableInfo(w, r) },
 
 		// Row operations
-		constants.ActionBrowseRows: apirows.New(s.Conn).Handle,
-		constants.ActionRowsBrowse: apirows.New(s.Conn).Handle,
+		constants.ActionBrowseRows: apiRowsBrowse.New(s.Conn).Handle,
+		constants.ActionRowsBrowse: apiRowsBrowse.New(s.Conn).Handle,
 		constants.ActionRowView:    func(w http.ResponseWriter, r *http.Request) { h.handleRowView(w, r) },
 		constants.ActionDeleteRow:  func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
 		constants.ActionRowDelete:  func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
