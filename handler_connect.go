@@ -7,14 +7,24 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/dracory/weebase/shared/session"
 )
 
 // handleConnect establishes a DB connection and stores it in the session.
 func (h *Handler) handleConnect(w http.ResponseWriter, r *http.Request) {
+	s := session.EnsureSession(w, r, h.opts.SessionSecret)
+	if s == nil {
+		WriteError(w, r, "failed to create or retrieve session")
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		WriteError(w, r, "connect must be POST")
 		return
 	}
+
 	_ = r.ParseForm()
 	profileID := strings.TrimSpace(r.Form.Get("profile_id"))
 	driver := strings.TrimSpace(r.Form.Get("driver"))
@@ -48,12 +58,19 @@ func (h *Handler) handleConnect(w http.ResponseWriter, r *http.Request) {
 		dsn = built
 	}
 	fmt.Println("dsn: ", dsn)
-	s := EnsureSession(w, r, h.opts.SessionSecret)
+	s = session.EnsureSession(w, r, h.opts.SessionSecret)
 	if err := h.tryAutoConnect(s, driver, dsn); err != nil {
 		WriteError(w, r, err.Error())
 		return
 	}
+	s.Conn = &session.ActiveConnection{
+		Driver:   driver,
+		DB:       db,
+		LastUsed: time.Now(),
+	}
 	WriteSuccessWithData(w, r, "connected", map[string]any{"driver": driver})
+	homeURL := h.opts.BasePath + "?connected=1"
+	http.Redirect(w, r, homeURL, http.StatusFound)
 }
 
 // buildDSNFromFields constructs a DSN from discrete connection fields per driver.

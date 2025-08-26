@@ -1,32 +1,34 @@
 package api_table_create
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
 
-	api "github.com/dracory/api"
+	"github.com/dracory/api"
+	"github.com/dracory/weebase/shared/session"
+	"gorm.io/gorm"
 )
 
-// Exec provides a minimal execution surface.
-type Exec interface {
-	Exec(sql string) error
+type TableCreate struct {
+	conn *session.ActiveConnection
 }
 
-// Deps contains only data and small interfaces (no function parameters).
-type Deps struct {
-	Driver string
-	Exec   Exec
+func New(conn *session.ActiveConnection) *TableCreate {
+	return &TableCreate{conn: conn}
 }
-
-type TableCreate struct{ deps Deps }
-
-func New(deps Deps) *TableCreate { return &TableCreate{deps: deps} }
 
 // Handle validates, builds SQL, and executes using only injected deps.
 func (tc *TableCreate) Handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		api.Respond(w, r, api.Error("method not allowed"))
+		return
+	}
+
+	if tc.conn == nil {
+		api.Respond(w, r, api.Error("not connected"))
 		return
 	}
 
@@ -44,15 +46,40 @@ func (tc *TableCreate) Handle(w http.ResponseWriter, r *http.Request) {
 	pkset := indexSet(r.Form["col_pk[]"])
 	aiset := indexSet(r.Form["col_ai[]"])
 
-	d := normalizeDriver(tc.deps.Driver)
+	d := normalizeDriver(tc.conn.Driver)
 	stmt, errMsg := buildSQL(d, schema, table, names, types, lens, nullable, pkset, aiset)
 	if errMsg != "" {
 		api.Respond(w, r, api.Error(errMsg))
 		return
 	}
 
-	if err := tc.deps.Exec.Exec(stmt); err != nil {
-		api.Respond(w, r, api.Error(err.Error()))
+	// Try to get *sql.DB from gorm.DB first
+	if gormDB, ok := tc.conn.DB.(*gorm.DB); ok {
+		sqlDB, err := gormDB.DB()
+		if err != nil {
+			api.Respond(w, r, api.Error("failed to get database connection: "+err.Error()))
+			return
+		}
+		if _, err := sqlDB.ExecContext(r.Context(), stmt); err != nil {
+			api.Respond(w, r, api.Error(err.Error()))
+			return
+		}
+	} else if sqlDB, ok := tc.conn.DB.(*sql.DB); ok {
+		// Handle direct *sql.DB
+		if _, err := sqlDB.ExecContext(r.Context(), stmt); err != nil {
+			api.Respond(w, r, api.Error(err.Error()))
+			return
+		}
+	} else if execCtx, ok := tc.conn.DB.(interface {
+		ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	}); ok {
+		// Handle any type that implements ExecContext
+		if _, err := execCtx.ExecContext(r.Context(), stmt); err != nil {
+			api.Respond(w, r, api.Error(err.Error()))
+			return
+		}
+	} else {
+		api.Respond(w, r, api.Error("database connection does not support execution"))
 		return
 	}
 	api.Respond(w, r, api.SuccessWithData("created", map[string]any{"sql": stmt}))

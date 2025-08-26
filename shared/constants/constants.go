@@ -38,10 +38,6 @@ const (
 	ActionListSaved  = "list_saved_queries"
 	ActionSaveQuery  = "save_query"
 
-	ActionDDLCreateTable = "ddl_create_table"
-	ActionDDLAlterTable  = "ddl_alter_table"
-	ActionDDLDropTable   = "ddl_drop_table"
-
 	ActionExport = "export"
 	ActionImport = "import"
 )

@@ -34,12 +34,6 @@ func Home(basePath string, params ...map[string]string) string {
 	return URL(basePath, constants.ActionHome, params...)
 }
 
-// TableCreate is a convenience wrapper to construct the DDL Create Table URL.
-// Signature: TableCreate(basePath, params)
-func TableCreate(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionDDLCreateTable, params...)
-}
-
 // PageTableCreate builds the page action URL for the Create Table page.
 // Signature: PageTableCreate(basePath, params)
 func PageTableCreate(basePath string, params ...map[string]string) string {
@@ -48,7 +42,7 @@ func PageTableCreate(basePath string, params ...map[string]string) string {
 
 // APITableCreate builds the API action URL for Create Table POSTs.
 // Signature: APITableCreate(basePath, params)
-func APITableCreate(basePath string, params ...map[string]string) string {
+func ApiTableCreate(basePath string, params ...map[string]string) string {
 	return URL(basePath, constants.ActionApiTableCreate, params...)
 }
 

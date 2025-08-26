@@ -16,8 +16,7 @@ const sessionCookieName = "wb_sid"
 type Session struct {
 	ID        string
 	CreatedAt time.Time
-	// TODO: add user info, role, active connection id, etc.
-	Conn *ActiveConnection
+	Conn      *ActiveConnection
 }
 
 // ActiveConnection holds the per-session active DB connection.

@@ -33,7 +33,7 @@ func Handle(basePath, actionParam, csrfToken string, safeModeDefault bool) (temp
 		hb.Style(pageCSS),
 	}
 	// Compute URLs: page renders here, POST goes to API action
-	actionUrl := urls.APITableCreate(basePath, nil)
+	actionUrl := urls.ApiTableCreate(basePath, nil)
 	redirectUrl := urls.Home(basePath, nil)
 
 	extraBody := []hb.TagInterface{

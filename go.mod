@@ -4,8 +4,11 @@ go 1.24.5
 
 require (
 	github.com/dracory/api v1.7.0
+	github.com/dracory/database v0.2.0
 	github.com/dracory/env v0.5.0
+	github.com/gouniverse/cdn v1.6.0
 	github.com/gouniverse/hb v1.83.4
+	github.com/samber/lo v1.49.1
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/driver/sqlite v1.5.7
@@ -19,10 +22,10 @@ require (
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gouniverse/api v1.6.0 // indirect
-	github.com/gouniverse/cdn v1.6.0 // indirect
 	github.com/gouniverse/crypto v0.2.0 // indirect
 	github.com/gouniverse/dataobject v1.2.0 // indirect
 	github.com/gouniverse/envenc v0.10.0 // indirect
+	github.com/gouniverse/maputils v0.7.0 // indirect
 	github.com/gouniverse/uid v1.5.0 // indirect
 	github.com/gouniverse/webserver v0.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -38,11 +41,10 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/microsoft/go-mssqldb v1.6.0 // indirect
 	github.com/mingrammer/cfmt v1.1.0 // indirect
-	github.com/samber/lo v1.49.1 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 )

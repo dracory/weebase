@@ -1,11 +1,16 @@
 package weebase
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"html/template"
 	"log"
 	"net/http"
 	"path"
 	"strings"
+	"time"
+
+	"gorm.io/gorm"
 
 	apipkg "github.com/dracory/weebase/api"
 	apitablecreate "github.com/dracory/weebase/api/api_table_create"
@@ -15,9 +20,19 @@ import (
 	pageTableCreate "github.com/dracory/weebase/pages/page_table_create"
 	"github.com/dracory/weebase/shared/constants"
 	layout "github.com/dracory/weebase/shared/layout"
+	"github.com/dracory/weebase/shared/session"
 	"github.com/dracory/weebase/shared/urls"
 	hb "github.com/gouniverse/hb"
 )
+
+// newSessionID generates a new random session ID
+func newSessionID() string {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		panic(err) // This should never happen with crypto/rand
+	}
+	return hex.EncodeToString(b)
+}
 
 // execAdapter adapts a function to the Exec interface required by api/table_create.
 type execAdapter struct{ exec func(string) error }
@@ -33,7 +48,7 @@ type Handler struct {
 }
 
 // tryAutoConnect opens and pings a DB, then stores it into the session.
-func (h *Handler) tryAutoConnect(s *Session, driver, dsn string) error {
+func (h *Handler) tryAutoConnect(s *session.Session, driver, dsn string) error {
 	db, err := OpenGORM(driver, dsn)
 	if err != nil {
 		return err
@@ -45,7 +60,14 @@ func (h *Handler) tryAutoConnect(s *Session, driver, dsn string) error {
 	if err := sqlDB.Ping(); err != nil {
 		return err
 	}
-	s.Conn = &ActiveConnection{Driver: driver, DSN: dsn, DB: db}
+
+	// Create a new session.ActiveConnection with the correct type
+	s.Conn = &session.ActiveConnection{
+		ID:       newSessionID(),
+		Driver:   driver,
+		DB:       db,
+		LastUsed: time.Now(),
+	}
 	return nil
 }
 
@@ -60,7 +82,7 @@ func NewHandler(o Options) http.Handler {
 	// preload preconfigured profiles
 	for _, p := range o.PreconfiguredProfiles {
 		if p.ID == "" {
-			p.ID = newRandomID()
+			p.ID = newSessionID()
 		}
 		_ = store.Save(p)
 	}
@@ -83,7 +105,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://cdn.tailwindcss.com")
 
 	// Ensure a session exists (sets cookie if missing)
-	s := EnsureSession(w, r, h.opts.SessionSecret)
+	s := session.EnsureSession(w, r, h.opts.SessionSecret)
 
 	// Ensure CSRF cookie and get a token for templates
 	csrfToken := EnsureCSRFCookie(w, r, h.opts.SessionSecret)
@@ -146,7 +168,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // pageHandlers assembles the request-scoped action map for GET requests.
-func (h *Handler) pageHandlers(r *http.Request, s *Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
+func (h *Handler) pageHandlers(r *http.Request, s *session.Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
 	// GET-only handlers that render pages or public assets
 	return map[string]func(http.ResponseWriter, *http.Request){
 		constants.ActionAssetCSS: func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathCSS, ContentTypeCSS) },
@@ -159,10 +181,12 @@ func (h *Handler) pageHandlers(r *http.Request, s *Session, csrfToken string) ma
 		},
 		constants.ActionReadyz: func(w http.ResponseWriter, r *http.Request) {
 			if s.Conn != nil {
-				if sqlDB, err := s.Conn.DB.DB(); err == nil {
-					if err := sqlDB.Ping(); err != nil {
-						http.Error(w, "not ready", http.StatusServiceUnavailable)
-						return
+				if gormDB, ok := s.Conn.DB.(*gorm.DB); ok {
+					if sqlDB, err := gormDB.DB(); err == nil {
+						if err := sqlDB.Ping(); err != nil {
+							http.Error(w, "not ready", http.StatusServiceUnavailable)
+							return
+						}
 					}
 				}
 			}
@@ -199,20 +223,6 @@ func (h *Handler) pageHandlers(r *http.Request, s *Session, csrfToken string) ma
 			if err != nil {
 				log.Printf("render logout: %v", err)
 				h.renderStatus(w, r, http.StatusInternalServerError, "template error")
-				return
-			}
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			_, _ = w.Write([]byte(full))
-		},
-		// Legacy mixed action mapped to the new page renderer (GET only)
-		constants.ActionDDLCreateTable: func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodGet {
-				WriteError(w, r, "method not allowed")
-				return
-			}
-			full, err := pageTableCreate.Handle(h.opts.BasePath, h.opts.ActionParam, EnsureCSRFCookie(w, r, h.opts.SessionSecret), h.opts.SafeModeDefault)
-			if err != nil {
-				h.renderStatus(w, r, http.StatusInternalServerError, err.Error())
 				return
 			}
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -255,7 +265,7 @@ func (h *Handler) pageHandlers(r *http.Request, s *Session, csrfToken string) ma
 }
 
 // apiHandlers are POST-only handlers that perform API operations
-func (h *Handler) apiHandlers(r *http.Request, s *Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
+func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
 	return map[string]func(http.ResponseWriter, *http.Request){
 		// Connection/API operations
 		constants.ActionConnect:    func(w http.ResponseWriter, r *http.Request) { h.handleConnect(w, r) },
@@ -299,7 +309,7 @@ func (h *Handler) apiHandlers(r *http.Request, s *Session, csrfToken string) map
 		constants.ActionRowUpdate: func(w http.ResponseWriter, r *http.Request) {
 			apipkg.UpdateRow(func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) })(w, r)
 		},
-		constants.ActionViewDefinition: func(w http.ResponseWriter, r *http.Request) { h.handleViewDefinition(w, r) },
+		// constants.ActionViewDefinition: func(w http.ResponseWriter, r *http.Request) { h.handleViewDefinition(w, r) },
 		constants.ActionProfiles: func(w http.ResponseWriter, r *http.Request) {
 			apipkg.Profiles(func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) })(w, r)
 		},
@@ -315,22 +325,9 @@ func (h *Handler) apiHandlers(r *http.Request, s *Session, csrfToken string) map
 		constants.ActionSQLExecute: func(w http.ResponseWriter, r *http.Request) { h.handleSQLExecute(w, r) },
 		constants.ActionSQLExplain: func(w http.ResponseWriter, r *http.Request) { h.handleSQLExplain(w, r) },
 		// New explicit API handler for table create
-		constants.ActionApiTableCreate: func(w http.ResponseWriter, r *http.Request) {
-			if s.Conn == nil || s.Conn.DB == nil {
-				WriteError(w, r, "not connected")
-				return
-			}
-			deps := apitablecreate.Deps{
-				Driver: s.Conn.Driver,
-				Exec:   execAdapter{exec: func(q string) error { return s.Conn.DB.Exec(q).Error }},
-			}
-			apitablecreate.New(deps).Handle(w, r)
-		},
-		constants.ActionTableEdit: func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionDDLAlterTable) },
-		constants.ActionTableDrop: func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionDDLDropTable) },
-		constants.ActionExport:    func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionExport) },
-		constants.ActionImport:    func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionImport) },
-		// Note: no page-only handlers here
+		constants.ActionApiTableCreate: apitablecreate.New(s.Conn).Handle,
+		constants.ActionExport:         func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionExport) },
+		constants.ActionImport:         func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionImport) },
 	}
 }
 
