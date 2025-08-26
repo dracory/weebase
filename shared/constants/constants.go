@@ -24,6 +24,9 @@ const (
 	ActionTableInfo       = "table_info"
 	ActionViewDefinition  = "view_definition"
 
+	// Dedicated landing page when a table is selected from the sidebar or grid
+	ActionTableView       = "table_view"
+
 	ActionBrowseRows      = "browse_rows"
 	ActionRowView         = "row_view"
 	ActionInsertRow       = "insert_row"

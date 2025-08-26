@@ -28,6 +28,8 @@ const (
     ActionTableInfo       = shconst.ActionTableInfo
     ActionViewDefinition  = shconst.ActionViewDefinition
 
+    ActionTableView       = shconst.ActionTableView
+
     ActionBrowseRows      = shconst.ActionBrowseRows
     ActionRowView         = shconst.ActionRowView
     ActionInsertRow       = shconst.ActionInsertRow

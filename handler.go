@@ -7,8 +7,11 @@ import (
 	"path"
 	"strings"
 
-	loginpage "github.com/dracory/weebase/pages/login"
 	homepage "github.com/dracory/weebase/pages/home"
+	loginpage "github.com/dracory/weebase/pages/login"
+	layout "github.com/dracory/weebase/shared/layout"
+	"github.com/dracory/weebase/shared/urls"
+	hb "github.com/gouniverse/hb"
 )
 
 // Handler implements http.Handler for the single-endpoint router controlled by a query action.
@@ -102,139 +105,112 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	switch action {
-	case "", ActionHome:
-		// Render home page via pages/home package
-		var connInfo map[string]any
-		if s.Conn != nil {
-			connInfo = map[string]any{"driver": s.Conn.Driver}
-		}
-		full, err := homepage.Handle(h.tmplBase, h.opts.BasePath, h.opts.ActionParam, h.drivers.List(), h.opts.AllowAdHocConnections, h.opts.SafeModeDefault, csrfToken, connInfo)
-		if err != nil {
-			log.Printf("render home: %v", err)
-			h.renderStatus(w, r, http.StatusInternalServerError, "template error")
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write([]byte(full))
-		return
-	case ActionAssetCSS:
-		serveAsset(w, r, AssetPathCSS, ContentTypeCSS)
-		return
-	case ActionAssetJS:
-		serveAsset(w, r, AssetPathJS, ContentTypeJS)
-		return
-	case ActionLoginCSS:
-		serveAsset(w, r, LoginAssetPathCSS, ContentTypeCSS)
-		return
-	case ActionLoginJS:
-		serveAsset(w, r, LoginAssetPathJS, ContentTypeJS)
-		return
-	case ActionHealthz:
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
-		return
-	case ActionReadyz:
-		// If there's an active connection, verify we can ping it.
-		if s.Conn != nil {
-			if sqlDB, err := s.Conn.DB.DB(); err == nil {
-				if err := sqlDB.Ping(); err != nil {
-					http.Error(w, "not ready", http.StatusServiceUnavailable)
-					return
-				}
-			}
-		}
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ready"))
-		return
-	// --- Implemented actions ---
-	case ActionLogin:
-		// Render login page via pages/login package
-		full, err := loginpage.Handle(h.tmplBase, h.opts.BasePath, h.opts.ActionParam, h.drivers.List(), h.opts.AllowAdHocConnections, h.opts.SafeModeDefault, csrfToken)
-		if err != nil {
-			log.Printf("render login: %v", err)
-			h.renderStatus(w, r, http.StatusInternalServerError, "template error")
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write([]byte(full))
-		return
-	case ActionLogout:
-		h.handleLogout(w, r, csrfToken)
-		return
-	case ActionConnect:
-		h.handleConnect(w, r)
-		return
-	case ActionDisconnect:
-		h.handleDisconnect(w, r)
-		return
-	case ActionListSchemas:
-		h.handleListSchemas(w, r)
-		return
-	case ActionListTables:
-		h.handleListTables(w, r)
-		return
-	case ActionTableInfo:
-		h.handleTableInfo(w, r)
-		return
-	case ActionBrowseRows:
-		h.handleBrowseRows(w, r)
-		return
-	case ActionRowView:
-		h.handleRowView(w, r)
-	case ActionDeleteRow:
-		h.handleDeleteRow(w, r)
-		return
-	case ActionInsertRow:
-		h.handleInsertRow(w, r)
-		return
-	case ActionUpdateRow:
-		h.handleUpdateRow(w, r)
-		return
-	case ActionViewDefinition:
-		h.handleViewDefinition(w, r)
-		return
-	case ActionProfiles:
-		h.handleProfiles(w, r)
-		return
-	case ActionProfilesSave:
-		h.handleProfilesSave(w, r)
-		return
-	// --- Action stubs (to be implemented) ---
-	case ActionSQLExecute, ActionSQLExplain,
-		ActionListSaved, ActionSaveQuery,
-		ActionDDLAlterTable, ActionDDLDropTable,
-		ActionExport, ActionImport:
-		// handle implemented SQL console actions
-		if action == ActionSQLExecute {
-			h.handleSQLExecute(w, r)
-			return
-		}
-		if action == ActionSQLExplain {
-			h.handleSQLExplain(w, r)
-			return
-		}
-		JSONNotImplemented(w, action)
-		return
-	case ActionDDLCreateTable:
-		h.handleDDLCreateTable(w, r)
-		return
-	default:
-		// For now, render 404 within layout
-		h.renderStatus(w, r, http.StatusNotFound, "Unknown action: "+action)
+
+	handlers := h.actionHandlers(r, s, csrfToken)
+	// empty action maps to home
+	if action == "" {
+		action = ActionHome
+	}
+	if handler, ok := handlers[action]; ok {
+		handler(w, r)
 		return
 	}
+	// Default 404 within layout
+	h.renderStatus(w, r, http.StatusNotFound, "Unknown action: "+action)
 }
- 
+
+// actionHandlers assembles the request-scoped action map.
+func (h *Handler) actionHandlers(r *http.Request, s *Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
+	return map[string]func(http.ResponseWriter, *http.Request){
+		ActionAssetCSS: func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathCSS, ContentTypeCSS) },
+		ActionAssetJS:  func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathJS, ContentTypeJS) },
+		ActionLoginCSS: func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, LoginAssetPathCSS, ContentTypeCSS) },
+		ActionLoginJS:  func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, LoginAssetPathJS, ContentTypeJS) },
+		ActionHealthz:  func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK); _, _ = w.Write([]byte("ok")) },
+		ActionReadyz: func(w http.ResponseWriter, r *http.Request) {
+			if s.Conn != nil {
+				if sqlDB, err := s.Conn.DB.DB(); err == nil {
+					if err := sqlDB.Ping(); err != nil {
+						http.Error(w, "not ready", http.StatusServiceUnavailable)
+						return
+					}
+				}
+			}
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("ready"))
+		},
+		ActionHome: func(w http.ResponseWriter, r *http.Request) {
+			var connInfo map[string]any
+			if s.Conn != nil {
+				connInfo = map[string]any{"driver": s.Conn.Driver}
+			}
+			full, err := homepage.Handle(h.opts.BasePath, h.opts.ActionParam, h.drivers.List(), h.opts.AllowAdHocConnections, h.opts.SafeModeDefault, csrfToken, connInfo)
+			if err != nil {
+				log.Printf("render home: %v", err)
+				h.renderStatus(w, r, http.StatusInternalServerError, "template error")
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(full))
+		},
+		ActionLogin: func(w http.ResponseWriter, r *http.Request) {
+			full, err := loginpage.Handle(h.tmplBase, h.opts.BasePath, h.opts.ActionParam, h.drivers.List(), h.opts.AllowAdHocConnections, h.opts.SafeModeDefault, csrfToken)
+			if err != nil {
+				log.Printf("render login: %v", err)
+				h.renderStatus(w, r, http.StatusInternalServerError, "template error")
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(full))
+		},
+		ActionLogout:       func(w http.ResponseWriter, r *http.Request) { h.handleLogout(w, r, csrfToken) },
+		ActionConnect:      func(w http.ResponseWriter, r *http.Request) { h.handleConnect(w, r) },
+		ActionDisconnect:   func(w http.ResponseWriter, r *http.Request) { h.handleDisconnect(w, r) },
+		ActionListSchemas:  func(w http.ResponseWriter, r *http.Request) { h.handleListSchemas(w, r) },
+		ActionListTables:   func(w http.ResponseWriter, r *http.Request) { h.handleListTables(w, r) },
+		ActionTableInfo:    func(w http.ResponseWriter, r *http.Request) { h.handleTableInfo(w, r) },
+		ActionBrowseRows:   func(w http.ResponseWriter, r *http.Request) { h.handleBrowseRows(w, r) },
+		ActionRowView:      func(w http.ResponseWriter, r *http.Request) { h.handleRowView(w, r) },
+		ActionDeleteRow:    func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
+		ActionInsertRow:    func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) },
+		ActionUpdateRow:    func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) },
+		ActionViewDefinition: func(w http.ResponseWriter, r *http.Request) { h.handleViewDefinition(w, r) },
+		ActionProfiles:     func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) },
+		ActionProfilesSave: func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) },
+		ActionSQLExecute:   func(w http.ResponseWriter, r *http.Request) { h.handleSQLExecute(w, r) },
+		ActionSQLExplain:   func(w http.ResponseWriter, r *http.Request) { h.handleSQLExplain(w, r) },
+		ActionDDLCreateTable: func(w http.ResponseWriter, r *http.Request) { h.handleDDLCreateTable(w, r) },
+		ActionExport:       func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, ActionExport) },
+		ActionImport:       func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, ActionImport) },
+		ActionTableView: func(w http.ResponseWriter, r *http.Request) {
+			// temporary redirect to browse_rows while richer view is being built
+			q := r.URL.Query()
+			params := map[string]string{}
+			if schema := q.Get("schema"); schema != "" { params["schema"] = schema }
+			if table := q.Get("table"); table != "" { params["table"] = table }
+			if limit := q.Get("limit"); limit != "" { params["limit"] = limit }
+			if offset := q.Get("offset"); offset != "" { params["offset"] = offset }
+			dest := urls.URL(h.opts.BasePath, ActionBrowseRows, params)
+			http.Redirect(w, r, dest, http.StatusFound)
+		},
+	}
+}
 
 func (h *Handler) renderStatus(w http.ResponseWriter, r *http.Request, code int, msg string) {
 	w.WriteHeader(code)
-	data := map[string]any{
-		"Title":    http.StatusText(code),
-		"Message":  msg,
-		"BasePath": h.opts.BasePath,
-	}
-	_ = h.tmplBase.ExecuteTemplate(w, "status.gohtml", data)
+	// Build a minimal status page using shared layout
+	main := hb.Div().Children([]hb.TagInterface{
+		hb.Heading2().Text(http.StatusText(code)),
+		hb.Paragraph().Text(msg),
+	}).ToHTML()
+	full := layout.RenderWith(layout.Options{
+		Title:           http.StatusText(code),
+		BasePath:        h.opts.BasePath,
+		SafeModeDefault: h.opts.SafeModeDefault,
+		MainHTML:        main,
+	})
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write([]byte(full))
 }
 
 func serveAsset(w http.ResponseWriter, r *http.Request, assetPath, contentType string) {
@@ -244,7 +220,3 @@ func serveAsset(w http.ResponseWriter, r *http.Request, assetPath, contentType s
 	w.Header().Set("Content-Disposition", "inline; filename="+path.Base(assetPath))
 	http.ServeFileFS(w, r, embeddedFS, assetPath)
 }
-
-// handleListSchemas is implemented in `handler_list_schemas.go`.
-
-// handleListTables is implemented in `handler_list_tables.go`.

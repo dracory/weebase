@@ -1,16 +1,16 @@
 package home
 
 import (
-	"bytes"
 	"html/template"
 
 	"embed"
+
 	"github.com/dracory/weebase/shared"
 	"github.com/dracory/weebase/shared/constants"
 	layout "github.com/dracory/weebase/shared/layout"
 	"github.com/dracory/weebase/shared/urls"
-	hb "github.com/gouniverse/hb"
 	"github.com/gouniverse/cdn"
+	hb "github.com/gouniverse/hb"
 )
 
 //go:embed script.js styles.css
@@ -18,7 +18,6 @@ var embeddedFS embed.FS
 
 // Handle renders the Home page using the shared index content template and returns full HTML.
 func Handle(
-	tmpl *template.Template,
 	basePath, actionParam string,
 	enabledDrivers []string,
 	allowAdHocConnections bool,
@@ -33,22 +32,11 @@ func Handle(
 	pageCSS, _ := shared.EmbeddedFileToString(embeddedFS, "styles.css")
 	pageJS, _ := shared.EmbeddedFileToString(embeddedFS, "script.js")
 
-	data := map[string]any{
-		"Title":                 "WeeBase",
-		"BasePath":              basePath,
-		"ActionParam":           actionParam,
-		"EnabledDrivers":        enabledDrivers,
-		"AllowAdHocConnections": allowAdHocConnections,
-		"SafeModeDefault":       safeModeDefault,
-		"CSRFToken":             csrfToken,
-		"Conn":                  connInfo,
-	}
-
-	// Render content-only template into buffer
-	var buf bytes.Buffer
-	if err := tmpl.ExecuteTemplate(&buf, "index_content", data); err != nil {
-		return "", err
-	}
+	// Minimal main content; Vue app will enhance center area.
+	main := hb.Div().Children([]hb.TagInterface{
+		hb.Heading2().Text("Welcome"),
+		hb.Paragraph().Text("This is the WeeBase admin UI. Use the sidebar to navigate."),
+	}).ToHTML()
 
 	// Build a simple Adminer-like sidebar
 	// Top: quick actions
@@ -80,6 +68,7 @@ func Handle(
 
 	listURL := urls.URL(basePath, constants.ActionListTables, nil)
 	browseBase := urls.URL(basePath, constants.ActionBrowseRows, nil)
+	tableViewURL := urls.URL(basePath, constants.ActionTableView, nil)
 	sqlURL := urls.URL(basePath, constants.ActionSQLExecute, nil)
 	createTableURL := urls.URL(basePath, constants.ActionDDLCreateTable, nil)
 	importURL := urls.URL(basePath, constants.ActionImport, nil)
@@ -90,6 +79,7 @@ func Handle(
 		hb.ScriptURL(cdn.Sweetalert2_11()),
 		hb.Script(`window.urlListTables = "` + template.JSEscapeString(listURL) + `"`),
 		hb.Script(`window.urlBrowseRows = "` + template.JSEscapeString(browseBase) + `"`),
+		hb.Script(`window.urlTableView = "` + template.JSEscapeString(tableViewURL) + `"`),
 		hb.Script(`window.urlSqlExecute = "` + template.JSEscapeString(sqlURL) + `"`),
 		hb.Script(`window.urlCreateTable = "` + template.JSEscapeString(createTableURL) + `"`),
 		hb.Script(`window.urlImport = "` + template.JSEscapeString(importURL) + `"`),
@@ -103,7 +93,7 @@ func Handle(
 		Title:           "Home",
 		BasePath:        basePath,
 		SafeModeDefault: safeModeDefault,
-		MainHTML:        buf.String(),
+		MainHTML:        main,
 		SidebarHTML:     sidebarHTML,
 		ExtraHead:       extraHead,
 		ExtraBodyEnd:    extraBody,

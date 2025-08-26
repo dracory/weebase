@@ -6,7 +6,7 @@ import (
 	"io/fs"
 )
 
-//go:embed templates/* assets/* pages/**
+//go:embed assets/* pages/**
 var embeddedFS embed.FS
 
 func parseTemplates() *template.Template {
@@ -14,7 +14,7 @@ func parseTemplates() *template.Template {
     t := template.New("").Funcs(template.FuncMap{})
     // Collect template files from both templates/ and pages/
     var files []string
-    walkers := []string{"templates", "pages"}
+    walkers := []string{"pages"}
     for _, root := range walkers {
         _ = fs.WalkDir(embeddedFS, root, func(p string, d fs.DirEntry, err error) error {
             if err != nil {
