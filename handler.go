@@ -12,7 +12,9 @@ import (
 
 	"gorm.io/gorm"
 
+	apiProfilesList "github.com/dracory/weebase/api/api_profiles_list"
 	apiProfilesSave "github.com/dracory/weebase/api/api_profiles_save"
+	apiRowDelete "github.com/dracory/weebase/api/api_row_delete"
 	apiRowInsert "github.com/dracory/weebase/api/api_row_insert"
 	apiRowUpdate "github.com/dracory/weebase/api/api_row_update"
 	apiRowView "github.com/dracory/weebase/api/api_row_view"
@@ -299,16 +301,16 @@ func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken str
 		constants.ActionBrowseRows: apiRowsBrowse.New(s.Conn).Handle,
 		constants.ActionRowsBrowse: apiRowsBrowse.New(s.Conn).Handle,
 		constants.ActionRowView:    apiRowView.New(s.Conn).Handle,
-		constants.ActionDeleteRow:  func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
-		constants.ActionRowDelete:  func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
+		constants.ActionDeleteRow:  apiRowDelete.New(s.Conn, h.opts.SafeModeDefault, h.opts.SessionSecret).Handle,
+		constants.ActionRowDelete:  apiRowDelete.New(s.Conn, h.opts.SafeModeDefault, h.opts.SessionSecret).Handle,
 		constants.ActionInsertRow:  apiRowInsert.New(s.Conn, h.opts.SafeModeDefault).Handle,
 		constants.ActionRowInsert:  apiRowInsert.New(s.Conn, h.opts.SafeModeDefault).Handle,
 		constants.ActionUpdateRow:  apiRowUpdate.New(s.Conn, h.opts.SafeModeDefault).Handle,
 		constants.ActionRowUpdate:  apiRowUpdate.New(s.Conn, h.opts.SafeModeDefault).Handle,
 
 		// Profiles
-		constants.ActionProfiles:     func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) },
-		constants.ActionProfilesList: func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) },
+		constants.ActionProfiles:     apiProfilesList.New(h.profiles).Handle,
+		constants.ActionProfilesList: apiProfilesList.New(h.profiles).Handle,
 		constants.ActionProfilesSave: h.createProfilesSaveHandler(),
 		constants.ActionProfileSave:  h.createProfilesSaveHandler(),
 

@@ -4,7 +4,6 @@ go 1.24.5
 
 require (
 	github.com/dracory/api v1.7.0
-	github.com/dracory/database v0.2.0
 	github.com/dracory/env v0.5.0
 	github.com/gouniverse/cdn v1.6.0
 	github.com/gouniverse/hb v1.83.4
@@ -25,7 +24,6 @@ require (
 	github.com/gouniverse/crypto v0.2.0 // indirect
 	github.com/gouniverse/dataobject v1.2.0 // indirect
 	github.com/gouniverse/envenc v0.10.0 // indirect
-	github.com/gouniverse/maputils v0.7.0 // indirect
 	github.com/gouniverse/uid v1.5.0 // indirect
 	github.com/gouniverse/webserver v0.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
