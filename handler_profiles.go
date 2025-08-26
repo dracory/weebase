@@ -10,6 +10,6 @@ func (h *Handler) handleProfiles(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, r, "profiles must be GET")
 		return
 	}
-	list := h.profiles.List()
-	WriteSuccessWithData(w, r, "ok", map[string]any{"profiles": list})
+	profiles := h.profiles.List()
+	WriteSuccessWithData(w, r, "ok", map[string]any{"profiles": profiles})
 }

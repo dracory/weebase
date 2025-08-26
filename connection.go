@@ -1,46 +1,41 @@
 package weebase
 
-import "sync"
+import (
+	"sync"
 
-// ConnectionProfile stores user-saved connection details (placeholder; expand later).
-type ConnectionProfile struct {
-	ID     string
-	Name   string
-	Driver string
-	DSN    string
-}
+	"github.com/dracory/weebase/shared/types"
+)
 
-// ConnectionStore is a pluggable store for persisted profiles.
-type ConnectionStore interface {
-	List() []ConnectionProfile
-	Save(p ConnectionProfile) error
-	Get(id string) (ConnectionProfile, bool)
-}
-
-// MemoryConnectionStore is an in-memory implementation.
+// MemoryConnectionStore is an in-memory implementation of types.ConnectionStore.
 type MemoryConnectionStore struct {
 	mu   sync.RWMutex
-	list []ConnectionProfile
+	list []types.ConnectionProfile
 }
 
-func NewMemoryConnectionStore() *MemoryConnectionStore { return &MemoryConnectionStore{} }
+// NewMemoryConnectionStore creates a new in-memory connection store.
+func NewMemoryConnectionStore() *MemoryConnectionStore { 
+	return &MemoryConnectionStore{} 
+}
 
-func (s *MemoryConnectionStore) List() []ConnectionProfile {
+// List returns all stored connection profiles.
+func (s *MemoryConnectionStore) List() []types.ConnectionProfile {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	out := make([]ConnectionProfile, len(s.list))
+	out := make([]types.ConnectionProfile, len(s.list))
 	copy(out, s.list)
 	return out
 }
 
-func (s *MemoryConnectionStore) Save(p ConnectionProfile) error {
+// Save stores a new connection profile.
+func (s *MemoryConnectionStore) Save(p types.ConnectionProfile) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.list = append(s.list, p)
 	return nil
 }
 
-func (s *MemoryConnectionStore) Get(id string) (ConnectionProfile, bool) {
+// Get retrieves a connection profile by ID.
+func (s *MemoryConnectionStore) Get(id string) (types.ConnectionProfile, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, p := range s.list {
@@ -48,5 +43,5 @@ func (s *MemoryConnectionStore) Get(id string) (ConnectionProfile, bool) {
 			return p, true
 		}
 	}
-	return ConnectionProfile{}, false
+	return types.ConnectionProfile{}, false
 }

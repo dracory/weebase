@@ -1,7 +1,9 @@
 package weebase
- 
+
 import (
-    "net/http"
+	"net/http"
+
+	"github.com/dracory/weebase/shared/types"
 )
 
 // Options configures the embedded Adminer-like handler.
@@ -31,7 +33,7 @@ type Options struct {
     DefaultConnection *DefaultConnection
 
     // PreconfiguredProfiles are loaded into the ConnectionStore at startup.
-    PreconfiguredProfiles []ConnectionProfile
+    PreconfiguredProfiles []types.ConnectionProfile
 }
 
 // withDefaults applies default values to Options.

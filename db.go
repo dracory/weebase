@@ -1,16 +1,16 @@
 package weebase
 
 import (
-	"errors"
 	"fmt"
-
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	gormmysql "gorm.io/driver/mysql"
 	gormpg "gorm.io/driver/postgres"
 	gormsqlite "gorm.io/driver/sqlite"
 	gormsqlserver "gorm.io/driver/sqlserver"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
+	"github.com/dracory/weebase/shared/driver"
 )
 
 // OpenGORM opens a GORM DB for the given driver and DSN.
@@ -34,13 +34,17 @@ func OpenGORM(driver, dsn string) (*gorm.DB, error) {
 	}
 }
 
-// ValidateDriver checks if name is among enabled drivers in the registry.
+// ValidateDriver checks if a driver is valid and enabled
 func (h *Handler) ValidateDriver(name string) error {
-	if name == "" {
-		return errors.New("driver is required")
-	}
-	if !h.drivers.IsEnabled(name) {
-		return fmt.Errorf("driver not enabled: %s", name)
-	}
-	return nil
+	validator := driver.NewValidator(&driverRegistryWrapper{h.drivers})
+	return validator.Validate(name)
+}
+
+// driverRegistryWrapper wraps DriverRegistry to implement the driver.Registry interface
+type driverRegistryWrapper struct {
+	drivers *DriverRegistry
+}
+
+func (w *driverRegistryWrapper) IsEnabled(name string) bool {
+	return w.drivers.IsEnabled(name)
 }

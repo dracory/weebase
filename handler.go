@@ -12,6 +12,7 @@ import (
 
 	"gorm.io/gorm"
 
+	apiProfilesSave "github.com/dracory/weebase/api/api_profiles_save"
 	apiRowInsert "github.com/dracory/weebase/api/api_row_insert"
 	apiRowUpdate "github.com/dracory/weebase/api/api_row_update"
 	apiRowView "github.com/dracory/weebase/api/api_row_view"
@@ -22,6 +23,7 @@ import (
 	apiTableCreate "github.com/dracory/weebase/api/api_table_create"
 	apiTableInfo "github.com/dracory/weebase/api/api_table_info"
 	apiTablesList "github.com/dracory/weebase/api/api_tables_list"
+	"github.com/dracory/weebase/shared/driver"
 	pageHome "github.com/dracory/weebase/pages/page_home"
 	pageLogin "github.com/dracory/weebase/pages/page_login"
 	pageLogout "github.com/dracory/weebase/pages/page_logout"
@@ -29,6 +31,7 @@ import (
 	"github.com/dracory/weebase/shared/constants"
 	"github.com/dracory/weebase/shared/layout"
 	"github.com/dracory/weebase/shared/session"
+	"github.com/dracory/weebase/shared/types"
 	"github.com/dracory/weebase/shared/urls"
 	"github.com/gouniverse/hb"
 )
@@ -52,7 +55,7 @@ type Handler struct {
 	opts     Options
 	tmplBase *template.Template
 	drivers  *DriverRegistry
-	profiles ConnectionStore
+	profiles types.ConnectionStore
 }
 
 // tryAutoConnect opens and pings a DB, then stores it into the session.
@@ -273,6 +276,13 @@ func (h *Handler) pageHandlers(r *http.Request, s *session.Session, csrfToken st
 }
 
 // apiHandlers are POST-only handlers that perform API operations
+// createProfilesSaveHandler creates a new ProfilesSave handler with the correct dependencies
+func (h *Handler) createProfilesSaveHandler() http.HandlerFunc {
+	validator := driver.NewValidator(&driverRegistryWrapper{h.drivers})
+	handler := apiProfilesSave.New(h.profiles, validator)
+	return handler.Handle
+}
+
 func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
 	return map[string]func(http.ResponseWriter, *http.Request){
 		// Connection/API operations
@@ -299,8 +309,8 @@ func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken str
 		// Profiles
 		constants.ActionProfiles:     func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) },
 		constants.ActionProfilesList: func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) },
-		constants.ActionProfilesSave: func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) },
-		constants.ActionProfileSave:  func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) },
+		constants.ActionProfilesSave: h.createProfilesSaveHandler(),
+		constants.ActionProfileSave:  h.createProfilesSaveHandler(),
 
 		// SQL operations
 		constants.ActionSQLExecute: apiSQLExecute.New(s.Conn, h.opts.SafeModeDefault, h.opts.ReadOnlyMode).Handle,
