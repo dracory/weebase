@@ -19,7 +19,7 @@ func Login(basePath string, params ...map[string]string) string {
 // Connect is a convenience wrapper to construct the connect endpoint URL.
 // Signature: Connect(basePath, params)
 func Connect(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionConnect, params...)
+	return URL(basePath, constants.ActionApiConnect, params...)
 }
 
 // Profiles is a convenience wrapper to construct the profiles endpoint URL.
@@ -54,14 +54,14 @@ func URL(basePath, action string, params ...map[string]string) string {
 
 // ListTables builds the URL for listing tables
 func ListTables(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionListTables, params...)
+	return URL(basePath, constants.ActionApiListTables, params...)
 }
 
 // BrowseRows builds the URL for browsing table rows
 func BrowseRows(basePath, table string, params ...map[string]string) string {
 	p := lo.FirstOr(params, map[string]string{})
 	p["table"] = table
-	return URL(basePath, constants.ActionBrowseRows, p)
+	return URL(basePath, constants.ActionApiBrowseRows, p)
 }
 
 // TableView builds the URL for table view page
@@ -71,17 +71,7 @@ func TableView(basePath string, params ...map[string]string) string {
 
 // SQLExecute builds the URL for SQL execution
 func SQLExecute(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionSQLExecute, params...)
-}
-
-// Import builds the URL for import page
-func Import(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionImport, params...)
-}
-
-// Export builds the URL for export page
-func Export(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionExport, params...)
+	return URL(basePath, constants.ActionPageSQLExecute, params...)
 }
 
 // Build constructs a URL like: basePath?actionParam=action&k=v...

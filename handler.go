@@ -149,9 +149,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			constants.ActionAssetCSS,
 			constants.ActionAssetJS,
 			constants.ActionHealthz,
-			constants.ActionReadyz,
-			constants.ActionLoginJS,
-			constants.ActionLoginCSS:
+			constants.ActionReadyz:
 			// allow
 		default:
 			http.Redirect(w, r, urls.Login(h.opts.BasePath), http.StatusFound)
@@ -188,8 +186,6 @@ func (h *Handler) pageHandlers(s *session.Session, csrfToken string) map[string]
 	return map[string]func(http.ResponseWriter, *http.Request){
 		constants.ActionAssetCSS: func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathCSS, ContentTypeCSS) },
 		constants.ActionAssetJS:  func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathJS, ContentTypeJS) },
-		constants.ActionLoginCSS: func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, LoginAssetPathCSS, ContentTypeCSS) },
-		constants.ActionLoginJS:  func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, LoginAssetPathJS, ContentTypeJS) },
 		constants.ActionHealthz: func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte("ok"))
@@ -296,42 +292,32 @@ func (h *Handler) apiHandlers(s *session.Session, csrfToken string) map[string]f
 
 	return map[string]func(http.ResponseWriter, *http.Request){
 		// Connection management
-		constants.ActionConnect:    apiConnect.New(h.opts.SessionSecret, h.profiles, validator).Handle,
-		constants.ActionDisconnect: disconnectHandler,
+		constants.ActionApiConnect:    apiConnect.New(h.opts.SessionSecret, h.profiles, validator).Handle,
+		constants.ActionApiDisconnect: disconnectHandler,
+
 		// Schema and table operations
-		constants.ActionListSchemas: apiSchemasList.New(s.Conn).Handle,
-		constants.ActionSchemasList: apiSchemasList.New(s.Conn).Handle,
-		constants.ActionListTables:  apiTablesList.New(s.Conn).Handle,
-		constants.ActionTablesList:  apiTablesList.New(s.Conn).Handle,
+		constants.ActionApiListSchemas: apiSchemasList.New(s.Conn).Handle,
+		constants.ActionApiListTables:  apiTablesList.New(s.Conn).Handle,
 
 		// Row operations
-		constants.ActionBrowseRows: apiRowsBrowse.New(s.Conn).Handle,
-		constants.ActionRowsBrowse: apiRowsBrowse.New(s.Conn).Handle,
-		constants.ActionRowView:    apiRowView.New(s.Conn).Handle,
-		constants.ActionDeleteRow:  apiRowDelete.New(s.Conn, h.opts.SafeModeDefault, h.opts.SessionSecret).Handle,
-		constants.ActionRowDelete:  apiRowDelete.New(s.Conn, h.opts.SafeModeDefault, h.opts.SessionSecret).Handle,
-		constants.ActionInsertRow:  apiRowInsert.New(s.Conn, h.opts.SafeModeDefault).Handle,
-		constants.ActionRowInsert:  apiRowInsert.New(s.Conn, h.opts.SafeModeDefault).Handle,
-		constants.ActionUpdateRow:  apiRowUpdate.New(s.Conn, h.opts.SafeModeDefault).Handle,
-		constants.ActionRowUpdate:  apiRowUpdate.New(s.Conn, h.opts.SafeModeDefault).Handle,
+		constants.ActionApiBrowseRows: apiRowsBrowse.New(s.Conn).Handle,
+		constants.ActionApiRowView:    apiRowView.New(s.Conn).Handle,
+		constants.ActionApiDeleteRow:  apiRowDelete.New(s.Conn, h.opts.SafeModeDefault, h.opts.SessionSecret).Handle,
+		constants.ActionApiInsertRow:  apiRowInsert.New(s.Conn, h.opts.SafeModeDefault).Handle,
+		constants.ActionApiUpdateRow:  apiRowUpdate.New(s.Conn, h.opts.SafeModeDefault).Handle,
 
 		// Profiles
-		constants.ActionProfiles:     apiProfilesList.New(h.profiles).Handle,
-		constants.ActionProfilesList: apiProfilesList.New(h.profiles).Handle,
-		constants.ActionProfilesSave: h.createProfilesSaveHandler(),
-		constants.ActionProfileSave:  h.createProfilesSaveHandler(),
+		constants.ActionPageProfiles:    apiProfilesList.New(h.profiles).Handle,
+		constants.ActionApiProfilesSave: h.createProfilesSaveHandler(),
 
 		// SQL operations
-		constants.ActionSQLExecute: apiSQLExecute.New(s.Conn, h.opts.SafeModeDefault, h.opts.ReadOnlyMode).Handle,
-		constants.ActionSQLExplain: apiSQLExplain.New(s.Conn).Handle,
+		constants.ActionPageSQLExecute: apiSQLExecute.New(s.Conn, h.opts.SafeModeDefault, h.opts.ReadOnlyMode).Handle,
+		constants.ActionApiSQLExecute:  apiSQLExecute.New(s.Conn, h.opts.SafeModeDefault, h.opts.ReadOnlyMode).Handle, // For API calls
+		constants.ActionApiSQLExplain:  apiSQLExplain.New(s.Conn).Handle,
 
 		// Table operations
-		constants.ActionTableInfo:      apiTableInfo.New(s.Conn).Handle,
+		constants.ActionApiTableInfo:   apiTableInfo.New(s.Conn).Handle,
 		constants.ActionApiTableCreate: apiTableCreate.New(s.Conn).Handle,
-
-		// Import/Export (not implemented yet)
-		constants.ActionExport: func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionExport) },
-		constants.ActionImport: func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionImport) },
 	}
 }
 

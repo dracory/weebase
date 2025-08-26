@@ -9,64 +9,53 @@ const (
 
 // Action names for the single-endpoint router. Keep in sync with templates.
 const (
+	// System actions
 	ActionHome     = "home"
 	ActionAssetCSS = "asset_css"
 	ActionAssetJS  = "asset_js"
 	ActionHealthz  = "healthz"
 	ActionReadyz   = "readyz"
 
+	// Authentication
 	ActionPageLogin  = "page_login"
 	ActionPageLogout = "page_logout"
-	ActionLoginJS    = "login_js"
-	ActionLoginCSS   = "login_css"
 
-	ActionConnect    = "connect"
-	ActionDisconnect = "disconnect"
+	// Connection management
+	ActionApiConnect    = "api_connect"
+	ActionApiDisconnect = "api_disconnect"
 
-	ActionProfiles     = "profiles"
-	ActionProfilesSave = "profiles_save"
+	// Profiles
+	ActionPageProfiles    = "page_profiles"
+	ActionApiProfilesSave = "api_profiles_save"
 
-	ActionListSchemas    = "list_schemas"
-	ActionListTables     = "list_tables"
-	ActionTableInfo      = "table_info"
-	ActionViewDefinition = "view_definition"
+	// Schema and table operations
+	ActionApiListSchemas    = "api_list_schemas"
+	ActionApiListTables     = "api_list_tables"
+	ActionApiTableInfo      = "api_table_info"
+	ActionApiViewDefinition = "api_view_definition"
 
-	// Dedicated landing page when a table is selected from the sidebar or grid
-	ActionPageTableView = "page_table_view"
+	// Data operations
+	ActionApiBrowseRows = "api_browse_rows"
+	ActionApiRowView    = "api_row_view"
+	ActionApiInsertRow  = "api_insert_row"
+	ActionApiUpdateRow  = "api_update_row"
+	ActionApiDeleteRow  = "api_delete_row"
 
-	ActionBrowseRows = "browse_rows"
-	ActionRowView    = "row_view"
-	ActionInsertRow  = "insert_row"
-	ActionUpdateRow  = "update_row"
-	ActionDeleteRow  = "delete_row"
-
-	ActionSQLExecute = "sql_execute"
-	ActionSQLExplain = "sql_explain"
-	ActionListSaved  = "list_saved_queries"
-	ActionSaveQuery  = "save_query"
-
-	ActionExport = "export"
-	ActionImport = "import"
+	// SQL operations
+	ActionPageSQLExecute = "page_sql_execute"
+	ActionApiSQLExecute  = "api_sql_execute"
+	ActionApiSQLExplain  = "api_sql_explain"
+	ActionApiListSaved   = "api_list_saved_queries"
+	ActionApiSaveQuery   = "api_save_query"
 )
 
-// Noun_Verb alias actions for consistency; keep old names for backward compatibility.
+// Table management constants
 const (
-	ActionTablesList  = "tables_list"  // alias of list_tables
-	ActionSchemasList = "schemas_list" // alias of list_schemas
-
-	ActionTableCreate = "table_create" // alias of ddl_create_table
-	ActionTableEdit   = "table_edit"   // alias of ddl_alter_table
-	ActionTableDrop   = "table_drop"   // alias of ddl_drop_table
-
-	ActionRowsBrowse = "rows_browse" // alias of browse_rows
-	ActionRowInsert  = "row_insert"  // alias of insert_row
-	ActionRowUpdate  = "row_update"  // alias of update_row
-	ActionRowDelete  = "row_delete"  // alias of delete_row
-
-	ActionProfilesList = "profiles_list" // alias of profiles
-	ActionProfileSave  = "profile_save"  // alias of profiles_save
-
-	// New explicit actions to separate page vs API for table create
 	ActionPageTableCreate = "page_table_create"
-	ActionApiTableCreate  = "api_table_create"
+	ActionPageTableEdit   = "page_table_edit"
+	ActionPageTableView   = "page_table_view"
+
+	ActionApiTableCreate = "api_table_create"
+	ActionApiTableDrop   = "api_table_drop"
+	ActionApiTableEdit   = "api_table_edit"
 )

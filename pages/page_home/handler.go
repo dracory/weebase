@@ -72,8 +72,8 @@ func Handle(
 	tableViewURL := urls.TableView(basePath)
 	sqlURL := urls.SQLExecute(basePath)
 	createTableURL := urls.PageTableCreate(basePath)
-	importURL := urls.Import(basePath)
-	exportURL := urls.Export(basePath)
+	// importURL := urls.Import(basePath)
+	// exportURL := urls.Export(basePath)
 	// For BrowseRows, we'll need a table name which we'll handle in the frontend
 	browseBase := urls.BrowseRows(basePath, "")
 
@@ -89,8 +89,8 @@ func Handle(
 		hb.Script(`window.urlTableView = "` + template.JSEscapeString(tableViewURL) + `"`),
 		hb.Script(`window.urlSqlExecute = "` + template.JSEscapeString(sqlURL) + `"`),
 		hb.Script(`window.urlCreateTable = "` + template.JSEscapeString(createTableURL) + `"`),
-		hb.Script(`window.urlImport = "` + template.JSEscapeString(importURL) + `"`),
-		hb.Script(`window.urlExport = "` + template.JSEscapeString(exportURL) + `"`),
+		// hb.Script(`window.urlImport = "` + template.JSEscapeString(importURL) + `"`),
+		// hb.Script(`window.urlExport = "` + template.JSEscapeString(exportURL) + `"`),
 		hb.Script(`window.csrfToken = "` + template.JSEscapeString(csrfToken) + `"`),
 		hb.Script(pageJS),
 	}
