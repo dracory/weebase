@@ -49,6 +49,24 @@ const (
     ActionImport          = shconst.ActionImport
 )
 
+// Noun_Verb alias actions for consistency
+const (
+    ActionTablesList   = shconst.ActionTablesList
+    ActionSchemasList  = shconst.ActionSchemasList
+
+    ActionTableCreate  = shconst.ActionTableCreate
+    ActionTableEdit    = shconst.ActionTableEdit
+    ActionTableDrop    = shconst.ActionTableDrop
+
+    ActionRowsBrowse   = shconst.ActionRowsBrowse
+    ActionRowInsert    = shconst.ActionRowInsert
+    ActionRowUpdate    = shconst.ActionRowUpdate
+    ActionRowDelete    = shconst.ActionRowDelete
+
+    ActionProfilesList = shconst.ActionProfilesList
+    ActionProfileSave  = shconst.ActionProfileSave
+)
+
 // Asset paths and content types used by the embedded server.
 const (
     AssetPathCSS  = "assets/style.css"
@@ -59,3 +77,4 @@ const (
     LoginAssetPathJS  = "pages/login/script.js"
     LoginAssetPathCSS = "pages/login/styles.css"
 )
+

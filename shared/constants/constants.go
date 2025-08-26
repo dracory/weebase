@@ -45,3 +45,21 @@ const (
 	ActionExport          = "export"
 	ActionImport          = "import"
 )
+
+// Noun_Verb alias actions for consistency; keep old names for backward compatibility.
+const (
+	ActionTablesList   = "tables_list"   // alias of list_tables
+	ActionSchemasList  = "schemas_list"  // alias of list_schemas
+
+	ActionTableCreate  = "table_create"  // alias of ddl_create_table
+	ActionTableEdit    = "table_edit"    // alias of ddl_alter_table
+	ActionTableDrop    = "table_drop"    // alias of ddl_drop_table
+
+	ActionRowsBrowse   = "rows_browse"   // alias of browse_rows
+	ActionRowInsert    = "row_insert"    // alias of insert_row
+	ActionRowUpdate    = "row_update"    // alias of update_row
+	ActionRowDelete    = "row_delete"    // alias of delete_row
+
+	ActionProfilesList = "profiles_list" // alias of profiles
+	ActionProfileSave  = "profile_save"  // alias of profiles_save
+)
