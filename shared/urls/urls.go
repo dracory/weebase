@@ -27,6 +27,18 @@ func Profiles(basePath string, params map[string]string) string {
 	return URL(basePath, "profiles", params)
 }
 
+// Home is a convenience wrapper to construct the Home URL.
+// Signature: Home(basePath, params)
+func Home(basePath string, params map[string]string) string {
+    return URL(basePath, constants.ActionHome, params)
+}
+
+// TableCreate is a convenience wrapper to construct the DDL Create Table URL.
+// Signature: TableCreate(basePath, params)
+func TableCreate(basePath string, params map[string]string) string {
+    return URL(basePath, constants.ActionDDLCreateTable, params)
+}
+
 // URL is a convenience wrapper using defaults: basePath "/db" and actionParam "action".
 // Signature: URL(action, parameters)
 func URL(basePath, action string, parameters map[string]string) string {

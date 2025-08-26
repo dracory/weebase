@@ -67,7 +67,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("X-Frame-Options", "DENY")
 	w.Header().Set("Referrer-Policy", "no-referrer")
-	w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net")
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://cdn.tailwindcss.com")
 
 	// Ensure a session exists (sets cookie if missing)
 	s := EnsureSession(w, r, h.opts.SessionSecret)
@@ -203,7 +203,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// --- Action stubs (to be implemented) ---
 	case ActionSQLExecute, ActionSQLExplain,
 		ActionListSaved, ActionSaveQuery,
-		ActionDDLCreateTable, ActionDDLAlterTable, ActionDDLDropTable,
+		ActionDDLAlterTable, ActionDDLDropTable,
 		ActionExport, ActionImport:
 		// handle implemented SQL console actions
 		if action == ActionSQLExecute {
@@ -215,6 +215,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		JSONNotImplemented(w, action)
+		return
+	case ActionDDLCreateTable:
+		h.handleDDLCreateTable(w, r)
 		return
 	default:
 		// For now, render 404 within layout

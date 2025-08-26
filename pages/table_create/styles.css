@@ -1,0 +1,32 @@
+/* Minimal styles for Create Table page (mirrors login page simplicity) */
+#tableCreateApp { color: #e5e7eb; }
+#tableCreateApp h2 { color: #f8fafc; }
+#tableCreateApp label { color: #cbd5e1; }
+
+/* Inputs: better contrast on dark backgrounds */
+#tableCreateApp input,
+#tableCreateApp select,
+#tableCreateApp textarea {
+  background-color: #111827; /* slate-900 */
+  color: #f1f5f9;           /* slate-100 */
+  border-color: #334155;     /* slate-700 */
+}
+
+/* Placeholder color */
+#tableCreateApp input::placeholder,
+#tableCreateApp textarea::placeholder {
+  color: #94a3b8; /* slate-400 */
+}
+
+/* Focus ring */
+#tableCreateApp input:focus,
+#tableCreateApp select:focus,
+#tableCreateApp textarea:focus {
+  outline: 2px solid #60a5fa; /* blue-400 */
+  outline-offset: 0;
+  border-color: #60a5fa;
+}
+
+/* Checkbox visibility */
+#tableCreateApp input[type="checkbox"] { accent-color: #60a5fa; }
+#tableCreateApp label.text-sm { color: #cbd5e1; }

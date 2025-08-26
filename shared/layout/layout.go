@@ -12,6 +12,9 @@ type Options struct {
 	BasePath        string
 	SafeModeDefault bool
 	MainHTML        string
+	// SidebarHTML, when provided, renders on the left similar to Adminer
+	// and Tailwind's "w-64" style width.
+	SidebarHTML     string
 	ExtraHead       []hb.TagInterface
 	ExtraBodyEnd    []hb.TagInterface
 }
@@ -41,6 +44,8 @@ func RenderWith(o Options) template.HTML {
 		hb.NewTag("meta").Attr("charset", "utf-8"),
 		hb.NewTag("meta").Attr("name", "viewport").Attr("content", "width=device-width, initial-scale=1"),
 		hb.NewTag("title").Text(o.Title + " · WeeBase"),
+		// Tailwind via CDN for rapid Adminer-like styling
+		hb.ScriptURL("https://cdn.tailwindcss.com"),
 		hb.StyleURL(o.BasePath + "?action=asset_css"),
 	}
 	if len(o.ExtraHead) > 0 {
@@ -61,8 +66,18 @@ func RenderWith(o Options) template.HTML {
 		}),
 	)
 
-	// Main content wraps the provided HTML
-	main := hb.Main().Class("wb-main wb-container").Child(hb.Raw(string(o.MainHTML)))
+	// Shell: sidebar + main content
+	// Sidebar (optional)
+	var sidebar hb.TagInterface
+	if o.SidebarHTML != "" {
+		sidebar = hb.Aside().Class("wb-sidebar shrink-0 border-r border-gray-200 bg-gray-50 dark:bg-slate-900 dark:border-slate-800 p-3 w-60").
+			Child(hb.Raw(o.SidebarHTML))
+	}
+
+	// Main content wraps the provided HTML; container max-width applies to content area only
+	main := hb.Main().Class("wb-main grow p-4").
+		Child(hb.Div().Class("wb-container").
+			Child(hb.Raw(string(o.MainHTML))))
 
 	// Footer
 	footer := hb.Footer().Class("wb-footer wb-container").Child(
@@ -72,7 +87,10 @@ func RenderWith(o Options) template.HTML {
 	// Body base
 	bodyChildren := []hb.TagInterface{
 		header,
-		main,
+		hb.Div().Class("wb-shell flex min-h-[60vh]").Children([]hb.TagInterface{
+			sidebar,
+			main,
+		}),
 		footer,
 		hb.ScriptURL(o.BasePath + "?action=asset_js"),
 	}
