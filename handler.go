@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm"
 
 	apiRowsBrowse "github.com/dracory/weebase/api/api_rows_browse"
+	apiRowView "github.com/dracory/weebase/api/api_row_view"
 	apiSchemasList "github.com/dracory/weebase/api/api_schemas_list"
 	apiTableCreate "github.com/dracory/weebase/api/api_table_create"
 	apiTablesList "github.com/dracory/weebase/api/api_tables_list"
@@ -283,7 +284,7 @@ func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken str
 		// Row operations
 		constants.ActionBrowseRows: apiRowsBrowse.New(s.Conn).Handle,
 		constants.ActionRowsBrowse: apiRowsBrowse.New(s.Conn).Handle,
-		constants.ActionRowView:    func(w http.ResponseWriter, r *http.Request) { h.handleRowView(w, r) },
+		constants.ActionRowView:    apiRowView.New(s.Conn).Handle,
 		constants.ActionDeleteRow:  func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
 		constants.ActionRowDelete:  func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
 		constants.ActionInsertRow:  func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) },
