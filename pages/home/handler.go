@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"html/template"
 
+	"github.com/dracory/weebase/shared/constants"
 	layout "github.com/dracory/weebase/shared/layout"
 	"github.com/dracory/weebase/shared/urls"
 	hb "github.com/gouniverse/hb"
@@ -48,13 +49,11 @@ func Handle(
 		hb.NewTag("li").Child(hb.A().Class("text-slate-700 hover:underline dark:text-slate-200 opacity-60").Href(urls.URL(basePath, "ddl_create_table", nil)).Text("Create table")),
 	})
 
-	// Objects section (placeholder; can be hydrated by JS later)
+	// Objects section (will be hydrated by JS)
 	objects := hb.Div().Children([]hb.TagInterface{
 		hb.Paragraph().Class("text-xs uppercase tracking-wide text-slate-500 mb-1").Text("Objects"),
-		hb.NewTag("ul").Class("list-disc list-inside text-sm text-slate-700 dark:text-slate-200").Children([]hb.TagInterface{
-			hb.NewTag("li").Child(hb.A().Href("#").Text("select albums")).Attr("data-placeholder", "1"),
-			hb.NewTag("li").Child(hb.A().Href("#").Text("select interprets")).Attr("data-placeholder", "1"),
-			hb.NewTag("li").Child(hb.A().Href("#").Text("select songs")).Attr("data-placeholder", "1"),
+		hb.NewTag("ul").Attr("id", "wb-objects").Class("list-disc list-inside text-sm text-slate-700 dark:text-slate-200").Children([]hb.TagInterface{
+			hb.NewTag("li").Attr("data-placeholder", "1").Child(hb.Text("loading...")),
 		}),
 	})
 
@@ -66,6 +65,28 @@ func Handle(
 		objects,
 	}).ToHTML()
 
+	// Prepare sidebar hydration script: fetch real tables and render links
+	listURL := urls.URL(basePath, constants.ActionListTables, nil)
+	browseBase := urls.URL(basePath, constants.ActionBrowseRows, nil)
+	hydrate := hb.Script("(function(){\n" +
+		"  var el=document.getElementById('wb-objects'); if(!el) return;\n" +
+		"  fetch('" + template.JSEscapeString(listURL) + "', {credentials:'same-origin'})\n" +
+		"    .then(function(r){return r.json()}).then(function(d){\n" +
+		"      if(!d||!d.data||!Array.isArray(d.data.tables)) return;\n" +
+		"      el.innerHTML='';\n" +
+		"      var base='" + template.JSEscapeString(browseBase) + "';\n" +
+		"      d.data.tables.forEach(function(t){\n" +
+		"        var li=document.createElement('li');\n" +
+		"        var a=document.createElement('a');\n" +
+		"        a.textContent='select '+t;\n" +
+		"        a.href=base + (base.indexOf('?')>-1?'&':'?') + 'table=' + encodeURIComponent(t);\n" +
+		"        a.className='hover:underline';\n" +
+		"        li.appendChild(a);\n" +
+		"        el.appendChild(li);\n" +
+		"      });\n" +
+		"    }).catch(function(){});\n" +
+		"})();")
+
 	// Wrap with shared layout
 	full := layout.RenderWith(layout.Options{
 		Title:           "Home",
@@ -73,6 +94,7 @@ func Handle(
 		SafeModeDefault: safeModeDefault,
 		MainHTML:        buf.String(),
 		SidebarHTML:     sidebarHTML,
+		ExtraBodyEnd:    []hb.TagInterface{hydrate},
 	})
 	return full, nil
 }

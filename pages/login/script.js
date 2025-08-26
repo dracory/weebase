@@ -15,12 +15,12 @@
       console.log("urlRedirect", urlRedirect);
       console.log("csrfToken", csrfToken);
 
-      const driver = ref('');
+      const driver = ref('sqlite');
       const server = ref('');
       const port = ref('');
       const username = ref('');
       const password = ref('');
-      const database = ref('');
+      const database = ref('database.sqlite');
       const remember = ref(false);
       const profiles = ref([]);
       

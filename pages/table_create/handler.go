@@ -38,6 +38,7 @@ func Handle(basePath, actionParam, csrfToken string, safeModeDefault bool) (temp
 
 	extraBody := []hb.TagInterface{
 		// Optional SweetAlert for nicer errors
+		hb.ScriptURL(cdn.VueJs_3()),
 		hb.ScriptURL(cdn.Sweetalert2_11()),
 		hb.Script(`window.urlAction = "` + template.JSEscapeString(actionUrl) + `"`),
 		hb.Script(`window.csrfToken = "` + template.JSEscapeString(csrfToken) + `"`),

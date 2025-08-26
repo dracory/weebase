@@ -1,36 +1,37 @@
 <div id="tableCreateApp" class="p-4">
   <h2 class="text-xl font-semibold mb-3">Create table</h2>
-  <form id="tableCreateForm" class="space-y-4">
+  <form id="tableCreateForm" class="space-y-4" @submit.prevent="onSubmit">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
       <div>
         <label class="block text-sm font-medium mb-1">Schema (optional)</label>
-        <input name="schema" class="w-full border px-2 py-1 rounded" placeholder="public | dbname | dbo" />
+        <input name="schema" v-model="schema" class="w-full border px-2 py-1 rounded" placeholder="public | dbname | dbo" />
       </div>
       <div class="md:col-span-2">
         <label class="block text-sm font-medium mb-1">Table name</label>
-        <input name="table" required class="w-full border px-2 py-1 rounded" />
+        <input name="table" v-model="table" required class="w-full border px-2 py-1 rounded" />
       </div>
     </div>
 
     <div>
       <p class="text-sm font-semibold mb-2">Columns</p>
       <div id="cols">
-        <div class="grid grid-cols-12 gap-2 items-end mb-2 col-row">
-          <input class="col-span-3 border px-2 py-1 rounded" name="col_name[]" placeholder="name" required />
-          <input class="col-span-3 border px-2 py-1 rounded" name="col_type[]" placeholder="varchar,int,text" />
-          <input class="col-span-2 border px-2 py-1 rounded" name="col_length[]" placeholder="len" />
+        <div class="grid grid-cols-12 gap-2 items-end mb-2 col-row" v-for="(c, idx) in columns" :key="idx">
+          <input class="col-span-3 border px-2 py-1 rounded" name="col_name[]" v-model="c.name" placeholder="name" required />
+          <input class="col-span-3 border px-2 py-1 rounded" name="col_type[]" v-model="c.type" placeholder="varchar,int,text" />
+          <input class="col-span-2 border px-2 py-1 rounded" name="col_length[]" v-model="c.length" placeholder="len" />
           <label class="col-span-1 inline-flex items-center gap-1 text-sm">
-            <input type="checkbox" name="col_nullable[]" value="1" /> NULL
+            <input type="checkbox" name="col_nullable[]" :value="idx+1" v-model="c.nullable" /> NULL
           </label>
           <label class="col-span-1 inline-flex items-center gap-1 text-sm">
-            <input type="checkbox" name="col_pk[]" value="1" /> PK
+            <input type="checkbox" name="col_pk[]" :value="idx+1" v-model="c.pk" /> PK
           </label>
           <label class="col-span-1 inline-flex items-center gap-1 text-sm">
-            <input type="checkbox" name="col_ai[]" value="1" /> AI
+            <input type="checkbox" name="col_ai[]" :value="idx+1" v-model="c.ai" /> AI
           </label>
+          <button type="button" class="text-xs px-2 py-1 border rounded ml-2" @click="removeColumn(idx)">Remove</button>
         </div>
       </div>
-      <button id="addCol" type="button" class="mt-2 px-2 py-1 border rounded text-sm">Add column</button>
+      <button id="addCol" type="button" class="mt-2 px-2 py-1 border rounded text-sm" @click="addColumn">Add column</button>
     </div>
 
     <div class="pt-2">

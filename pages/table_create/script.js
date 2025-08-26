@@ -1,74 +1,68 @@
 (function () {
-  // Vanilla JS handler for Create Table form
-  const root = document.getElementById('tableCreateApp');
-  if (!root) return;
-  const form = document.getElementById('tableCreateForm');
-  if (!form) return;
+  var root = document.getElementById('tableCreateApp');
+  if (!root || !window.Vue) return;
 
   const urlAction = window.urlAction || '/';
   const csrfToken = window.csrfToken || '';
 
-  // Add new column row
-  const addBtn = document.getElementById('addCol');
-  const cols = document.getElementById('cols');
-  if (addBtn && cols) {
-    addBtn.addEventListener('click', () => {
-      const last = cols.querySelector('.col-row');
-      const clone = last.cloneNode(true);
-      clone.querySelectorAll('input').forEach(i => {
-        if (i.type === 'checkbox') { i.checked = false; }
-        else { i.value = ''; }
+  const { createApp, reactive } = window.Vue;
+
+  createApp({
+    setup() {
+      const state = reactive({
+        schema: '',
+        table: '',
+        columns: [
+          { name: '', type: '', length: '', nullable: false, pk: false, ai: false },
+          { name: '', type: '', length: '', nullable: false, pk: false, ai: false },
+        ],
+        submitting: false,
       });
-      // Ensure unique checkbox values increment (1..n) so backend maps correctly
-      const current = cols.querySelectorAll('.col-row').length + 1;
-      clone.querySelectorAll('input[type="checkbox"]').forEach((cb) => { cb.value = String(current); });
-      cols.appendChild(clone);
-    });
-  }
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData(form);
-    // append security only; action is already encoded in urlAction
-    formData.set('csrf_token', csrfToken);
-
-    // Convert to URLSearchParams for x-www-form-urlencoded
-    const params = new URLSearchParams();
-    for (const [k, v] of formData.entries()) {
-      params.append(k, v);
-    }
-
-    try {
-      const resp = await fetch(urlAction, {
-        method: 'POST',
-        body: params,
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': csrfToken },
-      });
-      const text = await resp.text();
-      let data = null;
-      try { data = text ? JSON.parse(text) : null; } catch (_) {}
-
-      if (resp.ok && data && (data.status === 'success' || data.ok)) {
-        // On success return to home
-        window.location.href = window.urlRedirect || urlAction; // fallback to base
-        return;
+      function addColumn() {
+        state.columns.push({ name: '', type: '', length: '', nullable: false, pk: false, ai: false });
+      }
+      function removeColumn(idx) {
+        if (state.columns.length <= 1) return;
+        state.columns.splice(idx, 1);
       }
 
-      const msg = (data && (data.message || data.error || data.details)) || text || (`HTTP ${resp.status}`);
-      if (window.Swal && typeof window.Swal.fire === 'function') {
-        window.Swal.fire({ icon: 'error', title: 'Create table failed', text: String(msg).slice(0, 2000) });
-      } else {
-        alert('Create table failed: ' + msg);
+      async function onSubmit(ev) {
+        if (ev && ev.preventDefault) ev.preventDefault();
+        try {
+          state.submitting = true;
+          const form = document.getElementById('tableCreateForm');
+          const fd = new FormData(form);
+          fd.set('csrf_token', csrfToken);
+
+          const params = new URLSearchParams();
+          for (const [k, v] of fd.entries()) params.append(k, v);
+
+          const resp = await fetch(urlAction, {
+            method: 'POST',
+            body: params,
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': csrfToken },
+          });
+          const text = await resp.text();
+          let data = null; try { data = text ? JSON.parse(text) : null; } catch (_) {}
+          if (resp.ok && data && (data.status === 'success' || data.ok)) {
+            window.location.href = window.urlRedirect || urlAction;
+            return;
+          }
+          const msg = (data && (data.message || data.error || data.details)) || text || (`HTTP ${resp.status}`);
+          if (window.Swal && window.Swal.fire) window.Swal.fire({ icon: 'error', title: 'Create table failed', text: String(msg).slice(0, 2000) });
+          else alert('Create table failed: ' + msg);
+        } catch (err) {
+          const msg = err && err.message ? err.message : String(err);
+          if (window.Swal && window.Swal.fire) window.Swal.fire({ icon: 'error', title: 'Network error', text: String(msg).slice(0, 2000) });
+          else alert('Network error: ' + msg);
+        } finally {
+          state.submitting = false;
+        }
       }
-    } catch (err) {
-      const msg = err && err.message ? err.message : String(err);
-      if (window.Swal && typeof window.Swal.fire === 'function') {
-        window.Swal.fire({ icon: 'error', title: 'Network error', text: String(msg).slice(0, 2000) });
-      } else {
-        alert('Network error: ' + msg);
-      }
-    }
-  });
+
+      return { ...state, addColumn, removeColumn, onSubmit };
+    },
+  }).mount('#tableCreateApp');
 })();
