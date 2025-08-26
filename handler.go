@@ -12,10 +12,10 @@ import (
 
 	"gorm.io/gorm"
 
+	apiRowsBrowse "github.com/dracory/weebase/api/api_rows_browse"
 	apiSchemasList "github.com/dracory/weebase/api/api_schemas_list"
 	apiTableCreate "github.com/dracory/weebase/api/api_table_create"
-	apiRowsBrowse "github.com/dracory/weebase/api/rows_browse"
-	apiTablesList "github.com/dracory/weebase/api/tables_list"
+	apiTablesList "github.com/dracory/weebase/api/api_tables_list"
 	pageHome "github.com/dracory/weebase/pages/page_home"
 	pageLogin "github.com/dracory/weebase/pages/page_login"
 	pageLogout "github.com/dracory/weebase/pages/page_logout"

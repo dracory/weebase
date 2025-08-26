@@ -1,4 +1,4 @@
-package tables_list
+package api_tables_list
 
 import (
 	"encoding/json"

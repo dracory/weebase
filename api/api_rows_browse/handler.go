@@ -1,4 +1,4 @@
-package rows_browse
+package api_rows_browse
 
 import (
 	"net/http"
