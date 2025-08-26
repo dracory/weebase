@@ -12,6 +12,8 @@ import (
 
 	"gorm.io/gorm"
 
+	apiConnect "github.com/dracory/weebase/api/api_connect"
+	apiDisconnect "github.com/dracory/weebase/api/api_disconnect"
 	apiProfilesList "github.com/dracory/weebase/api/api_profiles_list"
 	apiProfilesSave "github.com/dracory/weebase/api/api_profiles_save"
 	apiRowDelete "github.com/dracory/weebase/api/api_row_delete"
@@ -25,12 +27,12 @@ import (
 	apiTableCreate "github.com/dracory/weebase/api/api_table_create"
 	apiTableInfo "github.com/dracory/weebase/api/api_table_info"
 	apiTablesList "github.com/dracory/weebase/api/api_tables_list"
-	"github.com/dracory/weebase/shared/driver"
 	pageHome "github.com/dracory/weebase/pages/page_home"
 	pageLogin "github.com/dracory/weebase/pages/page_login"
 	pageLogout "github.com/dracory/weebase/pages/page_logout"
 	pageTableCreate "github.com/dracory/weebase/pages/page_table_create"
 	"github.com/dracory/weebase/shared/constants"
+	"github.com/dracory/weebase/shared/driver"
 	"github.com/dracory/weebase/shared/layout"
 	"github.com/dracory/weebase/shared/session"
 	"github.com/dracory/weebase/shared/types"
@@ -161,9 +163,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var handlers map[string]func(http.ResponseWriter, *http.Request)
 	switch r.Method {
 	case http.MethodGet:
-		handlers = h.pageHandlers(r, s, csrfToken)
+		handlers = h.pageHandlers(s, csrfToken)
 	case http.MethodPost:
-		handlers = h.apiHandlers(r, s, csrfToken)
+		handlers = h.apiHandlers(s, csrfToken)
 	default:
 		h.renderStatus(w, r, http.StatusMethodNotAllowed, "method not allowed")
 		return
@@ -181,7 +183,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // pageHandlers assembles the request-scoped action map for GET requests.
-func (h *Handler) pageHandlers(r *http.Request, s *session.Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
+func (h *Handler) pageHandlers(s *session.Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
 	// GET-only handlers that render pages or public assets
 	return map[string]func(http.ResponseWriter, *http.Request){
 		constants.ActionAssetCSS: func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathCSS, ContentTypeCSS) },
@@ -285,12 +287,17 @@ func (h *Handler) createProfilesSaveHandler() http.HandlerFunc {
 	return handler.Handle
 }
 
-func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
-	return map[string]func(http.ResponseWriter, *http.Request){
-		// Connection/API operations
-		constants.ActionConnect:    func(w http.ResponseWriter, r *http.Request) { h.handleConnect(w, r) },
-		constants.ActionDisconnect: func(w http.ResponseWriter, r *http.Request) { h.handleDisconnect(w, r) },
+func (h *Handler) apiHandlers(s *session.Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
+	// Create driver validator
+	validator := driver.NewValidator(&driverRegistryWrapper{h.drivers})
 
+	// Create disconnect handler
+	disconnectHandler := apiDisconnect.New(h.opts.SessionSecret).Handle
+
+	return map[string]func(http.ResponseWriter, *http.Request){
+		// Connection management
+		constants.ActionConnect:    apiConnect.New(h.opts.SessionSecret, h.profiles, validator).Handle,
+		constants.ActionDisconnect: disconnectHandler,
 		// Schema and table operations
 		constants.ActionListSchemas: apiSchemasList.New(s.Conn).Handle,
 		constants.ActionSchemasList: apiSchemasList.New(s.Conn).Handle,

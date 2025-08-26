@@ -1,5 +1,12 @@
 package constants
 
+// Database driver names
+const (
+	DriverPostgres = "postgres"
+	DriverMySQL    = "mysql"
+	DriverSQLite   = "sqlite"
+)
+
 // Action names for the single-endpoint router. Keep in sync with templates.
 const (
 	ActionHome     = "home"

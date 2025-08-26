@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/dracory/weebase/shared/constants"
 	weebase "github.com/dracory/weebase"
 )
 
@@ -18,7 +19,11 @@ func main() {
 	cfg.AllowAdHocConnections = true
 
 	h := weebase.NewHandler(weebase.Options{
-		EnabledDrivers:        []string{"postgres", "mysql", "sqlite"},
+		EnabledDrivers: []string{
+			constants.DriverPostgres,
+			constants.DriverMySQL,
+			constants.DriverSQLite,
+		},
 		SafeModeDefault:       cfg.SafeModeDefault,
 		AllowAdHocConnections: cfg.AllowAdHocConnections,
 		BasePath:              cfg.BasePath,

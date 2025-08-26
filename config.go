@@ -26,7 +26,7 @@ func LoadConfig() (Config, error) {
 
 	// Defaults via env package
 	cfg.HTTPPort = env.GetIntOrDefault("HTTP_PORT", 8080)
-	cfg.BasePath = env.GetStringOrDefault("BASE_URL", "/db")
+	cfg.BasePath = env.GetStringOrDefault("BASE_URL", "/")
 	cfg.SessionSecret = env.GetStringOrDefault("SESSION_SECRET", "dev-insecure-change-me")
 	cfg.AllowAdHocConnections = env.GetBoolOrDefault("ALLOW_ADHOC_CONNECTIONS", true)
 	cfg.SafeModeDefault = env.GetBoolOrDefault("SAFE_MODE_DEFAULT", true)

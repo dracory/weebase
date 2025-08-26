@@ -13,7 +13,7 @@ const actionParam = "action"
 // Login is a convenience wrapper using defaults: basePath "/db" and actionParam "action".
 // Signature: Login(params)
 func Login(basePath string, params ...map[string]string) string {
-	return URL(basePath, "login", params...)
+	return URL(basePath, constants.ActionPageLogin, params...)
 }
 
 // Connect is a convenience wrapper to construct the connect endpoint URL.
@@ -50,6 +50,38 @@ func ApiTableCreate(basePath string, params ...map[string]string) string {
 // Signature: URL(action, parameters)
 func URL(basePath, action string, params ...map[string]string) string {
 	return Build(basePath, action, params...)
+}
+
+// ListTables builds the URL for listing tables
+func ListTables(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionListTables, params...)
+}
+
+// BrowseRows builds the URL for browsing table rows
+func BrowseRows(basePath, table string, params ...map[string]string) string {
+	p := lo.FirstOr(params, map[string]string{})
+	p["table"] = table
+	return URL(basePath, constants.ActionBrowseRows, p)
+}
+
+// TableView builds the URL for table view page
+func TableView(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionPageTableView, params...)
+}
+
+// SQLExecute builds the URL for SQL execution
+func SQLExecute(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionSQLExecute, params...)
+}
+
+// Import builds the URL for import page
+func Import(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionImport, params...)
+}
+
+// Export builds the URL for export page
+func Export(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionExport, params...)
 }
 
 // Build constructs a URL like: basePath?actionParam=action&k=v...

@@ -1,22 +1,20 @@
 package page_home
 
 import (
+	"embed"
 	"html/template"
 
-	"embed"
-
 	"github.com/dracory/weebase/shared"
-	"github.com/dracory/weebase/shared/constants"
 	layout "github.com/dracory/weebase/shared/layout"
 	"github.com/dracory/weebase/shared/urls"
 	"github.com/gouniverse/cdn"
 	hb "github.com/gouniverse/hb"
 )
 
-//go:embed script.js styles.css
+//go:embed view.html script.js styles.css
 var embeddedFS embed.FS
 
-// Handle renders the Home page using the shared index content template and returns full HTML.
+// Handle renders the Home page and returns full HTML.
 func Handle(
 	basePath, actionParam string,
 	enabledDrivers []string,
@@ -28,18 +26,25 @@ func Handle(
 	template.HTML,
 	error,
 ) {
-	// Load page assets (styles + JS)
-	pageCSS, _ := shared.EmbeddedFileToString(embeddedFS, "styles.css")
-	pageJS, _ := shared.EmbeddedFileToString(embeddedFS, "script.js")
+	// Load page assets
+	pageCSS, err := css()
+	if err != nil {
+		return "", err
+	}
 
-	// Minimal main content; Vue app will enhance center area.
-	main := hb.Div().Children([]hb.TagInterface{
-		hb.Heading2().Text("Welcome"),
-		hb.Paragraph().Text("This is the WeeBase admin UI. Use the sidebar to navigate."),
-	}).ToHTML()
+	pageJS, err := js()
+	if err != nil {
+		return "", err
+	}
 
-	// Build a simple Adminer-like sidebar
-	// Top: quick actions
+	pageHTML, err := view()
+	if err != nil {
+		return "", err
+	}
+
+	mainHTML := template.HTML(pageHTML)
+
+	// Build sidebar
 	quickLinks := hb.NewTag("ul").Class("space-y-1 text-sm").Children([]hb.TagInterface{
 		hb.NewTag("li").Child(hb.A().Class("text-slate-700 hover:underline dark:text-slate-200").Href(urls.URL(basePath, "sql_execute", nil)).Text("SQL command")).Attr("title", "Open SQL console"),
 		hb.NewTag("li").Child(hb.A().Class("text-slate-700 hover:underline dark:text-slate-200 opacity-60").Href(urls.URL(basePath, "import", nil)).Text("Import")),
@@ -47,7 +52,6 @@ func Handle(
 		hb.NewTag("li").Child(hb.A().Class("text-slate-700 hover:underline dark:text-slate-200 opacity-60").Href(urls.URL(basePath, "ddl_create_table", nil)).Text("Create table")),
 	})
 
-	// Objects section (will be hydrated by JS)
 	objects := hb.Div().Children([]hb.TagInterface{
 		hb.Paragraph().Class("text-xs uppercase tracking-wide text-slate-500 mb-1").Text("Objects"),
 		hb.NewTag("ul").Attr("id", "wb-objects").Class("list-disc list-inside text-sm text-slate-700 dark:text-slate-200").Children([]hb.TagInterface{
@@ -63,16 +67,19 @@ func Handle(
 		objects,
 	}).ToHTML()
 
-	// Extra head and body similar to login page
-	extraHead := []hb.TagInterface{hb.Style(pageCSS)}
+	// Generate URLs using URL builder functions
+	listURL := urls.ListTables(basePath)
+	tableViewURL := urls.TableView(basePath)
+	sqlURL := urls.SQLExecute(basePath)
+	createTableURL := urls.PageTableCreate(basePath)
+	importURL := urls.Import(basePath)
+	exportURL := urls.Export(basePath)
+	// For BrowseRows, we'll need a table name which we'll handle in the frontend
+	browseBase := urls.BrowseRows(basePath, "")
 
-	listURL := urls.URL(basePath, constants.ActionListTables, nil)
-	browseBase := urls.URL(basePath, constants.ActionBrowseRows, nil)
-	tableViewURL := urls.URL(basePath, constants.ActionPageTableView, nil)
-	sqlURL := urls.URL(basePath, constants.ActionSQLExecute, nil)
-	createTableURL := urls.URL(basePath, constants.ActionPageTableCreate, nil)
-	importURL := urls.URL(basePath, constants.ActionImport, nil)
-	exportURL := urls.URL(basePath, constants.ActionExport, nil)
+	extraHead := []hb.TagInterface{
+		hb.Style(pageCSS),
+	}
 
 	extraBody := []hb.TagInterface{
 		hb.ScriptURL(cdn.VueJs_3()),
@@ -93,10 +100,34 @@ func Handle(
 		Title:           "Home",
 		BasePath:        basePath,
 		SafeModeDefault: safeModeDefault,
-		MainHTML:        main,
+		MainHTML:        string(mainHTML),
 		SidebarHTML:     sidebarHTML,
 		ExtraHead:       extraHead,
 		ExtraBodyEnd:    extraBody,
 	})
 	return full, nil
+}
+
+func css() (string, error) {
+	css, err := shared.EmbeddedFileToString(embeddedFS, "styles.css")
+	if err != nil {
+		return "", err
+	}
+	return css, nil
+}
+
+func js() (string, error) {
+	js, err := shared.EmbeddedFileToString(embeddedFS, "script.js")
+	if err != nil {
+		return "", err
+	}
+	return js, nil
+}
+
+func view() (string, error) {
+	html, err := shared.EmbeddedFileToString(embeddedFS, "view.html")
+	if err != nil {
+		return "", err
+	}
+	return html, nil
 }
