@@ -8,12 +8,21 @@ import (
 	"strings"
 
 	apipkg "github.com/dracory/weebase/api"
-	homepage "github.com/dracory/weebase/pages/home"
-	loginpage "github.com/dracory/weebase/pages/login"
+	apitablecreate "github.com/dracory/weebase/api/api_table_create"
+	pageHome "github.com/dracory/weebase/pages/page_home"
+	pageLogin "github.com/dracory/weebase/pages/page_login"
+	pageLogout "github.com/dracory/weebase/pages/page_logout"
+	pageTableCreate "github.com/dracory/weebase/pages/page_table_create"
+	"github.com/dracory/weebase/shared/constants"
 	layout "github.com/dracory/weebase/shared/layout"
 	"github.com/dracory/weebase/shared/urls"
 	hb "github.com/gouniverse/hb"
 )
+
+// execAdapter adapts a function to the Exec interface required by api/table_create.
+type execAdapter struct{ exec func(string) error }
+
+func (e execAdapter) Exec(sql string) error { return e.exec(sql) }
 
 // Handler implements http.Handler for the single-endpoint router controlled by a query action.
 type Handler struct {
@@ -99,18 +108,34 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	action := r.URL.Query().Get(h.opts.ActionParam)
 	if s.Conn == nil && r.Method == http.MethodGet {
 		switch action {
-		case ActionLogin, ActionAssetCSS, ActionAssetJS, ActionHealthz, ActionReadyz, ActionLoginJS, ActionLoginCSS:
+		case constants.ActionPageLogin,
+			constants.ActionAssetCSS,
+			constants.ActionAssetJS,
+			constants.ActionHealthz,
+			constants.ActionReadyz,
+			constants.ActionLoginJS,
+			constants.ActionLoginCSS:
 			// allow
 		default:
-			http.Redirect(w, r, h.opts.BasePath+"?"+h.opts.ActionParam+"="+ActionLogin, http.StatusFound)
+			http.Redirect(w, r, urls.Login(h.opts.BasePath), http.StatusFound)
 			return
 		}
 	}
 
-	handlers := h.actionHandlers(r, s, csrfToken)
+	// Choose handler set based on method: GET -> page, POST -> API
+	var handlers map[string]func(http.ResponseWriter, *http.Request)
+	switch r.Method {
+	case http.MethodGet:
+		handlers = h.pageHandlers(r, s, csrfToken)
+	case http.MethodPost:
+		handlers = h.apiHandlers(r, s, csrfToken)
+	default:
+		h.renderStatus(w, r, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
 	// empty action maps to home
 	if action == "" {
-		action = ActionHome
+		action = constants.ActionHome
 	}
 	if handler, ok := handlers[action]; ok {
 		handler(w, r)
@@ -120,15 +145,19 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.renderStatus(w, r, http.StatusNotFound, "Unknown action: "+action)
 }
 
-// actionHandlers assembles the request-scoped action map.
-func (h *Handler) actionHandlers(r *http.Request, s *Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
+// pageHandlers assembles the request-scoped action map for GET requests.
+func (h *Handler) pageHandlers(r *http.Request, s *Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
+	// GET-only handlers that render pages or public assets
 	return map[string]func(http.ResponseWriter, *http.Request){
-		ActionAssetCSS: func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathCSS, ContentTypeCSS) },
-		ActionAssetJS:  func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathJS, ContentTypeJS) },
-		ActionLoginCSS: func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, LoginAssetPathCSS, ContentTypeCSS) },
-		ActionLoginJS:  func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, LoginAssetPathJS, ContentTypeJS) },
-		ActionHealthz:  func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK); _, _ = w.Write([]byte("ok")) },
-		ActionReadyz: func(w http.ResponseWriter, r *http.Request) {
+		constants.ActionAssetCSS: func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathCSS, ContentTypeCSS) },
+		constants.ActionAssetJS:  func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathJS, ContentTypeJS) },
+		constants.ActionLoginCSS: func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, LoginAssetPathCSS, ContentTypeCSS) },
+		constants.ActionLoginJS:  func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, LoginAssetPathJS, ContentTypeJS) },
+		constants.ActionHealthz: func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("ok"))
+		},
+		constants.ActionReadyz: func(w http.ResponseWriter, r *http.Request) {
 			if s.Conn != nil {
 				if sqlDB, err := s.Conn.DB.DB(); err == nil {
 					if err := sqlDB.Ping(); err != nil {
@@ -140,12 +169,12 @@ func (h *Handler) actionHandlers(r *http.Request, s *Session, csrfToken string) 
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte("ready"))
 		},
-		ActionHome: func(w http.ResponseWriter, r *http.Request) {
+		constants.ActionHome: func(w http.ResponseWriter, r *http.Request) {
 			var connInfo map[string]any
 			if s.Conn != nil {
 				connInfo = map[string]any{"driver": s.Conn.Driver}
 			}
-			full, err := homepage.Handle(h.opts.BasePath, h.opts.ActionParam, h.drivers.List(), h.opts.AllowAdHocConnections, h.opts.SafeModeDefault, csrfToken, connInfo)
+			full, err := pageHome.Handle(h.opts.BasePath, h.opts.ActionParam, h.drivers.List(), h.opts.AllowAdHocConnections, h.opts.SafeModeDefault, csrfToken, connInfo)
 			if err != nil {
 				log.Printf("render home: %v", err)
 				h.renderStatus(w, r, http.StatusInternalServerError, "template error")
@@ -154,8 +183,8 @@ func (h *Handler) actionHandlers(r *http.Request, s *Session, csrfToken string) 
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			_, _ = w.Write([]byte(full))
 		},
-		ActionLogin: func(w http.ResponseWriter, r *http.Request) {
-			full, err := loginpage.Handle(h.tmplBase, h.opts.BasePath, h.opts.ActionParam, h.drivers.List(), h.opts.AllowAdHocConnections, h.opts.SafeModeDefault, csrfToken)
+		constants.ActionPageLogin: func(w http.ResponseWriter, r *http.Request) {
+			full, err := pageLogin.Handle(h.tmplBase, h.opts.BasePath, h.opts.ActionParam, h.drivers.List(), h.opts.AllowAdHocConnections, h.opts.SafeModeDefault, csrfToken)
 			if err != nil {
 				log.Printf("render login: %v", err)
 				h.renderStatus(w, r, http.StatusInternalServerError, "template error")
@@ -164,47 +193,144 @@ func (h *Handler) actionHandlers(r *http.Request, s *Session, csrfToken string) 
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			_, _ = w.Write([]byte(full))
 		},
-		ActionLogout:       func(w http.ResponseWriter, r *http.Request) { h.handleLogout(w, r, csrfToken) },
-		ActionConnect:      func(w http.ResponseWriter, r *http.Request) { h.handleConnect(w, r) },
-		ActionDisconnect:   func(w http.ResponseWriter, r *http.Request) { h.handleDisconnect(w, r) },
-		ActionListSchemas:  func(w http.ResponseWriter, r *http.Request) { apipkg.SchemasList(h, w, r) },
-		ActionListTables:   func(w http.ResponseWriter, r *http.Request) { apipkg.TablesList(h, w, r) },
-		ActionSchemasList:  func(w http.ResponseWriter, r *http.Request) { apipkg.SchemasList(h, w, r) },
-		ActionTablesList:   func(w http.ResponseWriter, r *http.Request) { apipkg.TablesList(h, w, r) },
-		ActionTableInfo:    func(w http.ResponseWriter, r *http.Request) { h.handleTableInfo(w, r) },
-		ActionBrowseRows:   func(w http.ResponseWriter, r *http.Request) { apipkg.RowsBrowse(h, w, r) },
-		ActionRowsBrowse:   func(w http.ResponseWriter, r *http.Request) { apipkg.RowsBrowse(h, w, r) },
-		ActionRowView:      func(w http.ResponseWriter, r *http.Request) { h.handleRowView(w, r) },
-		ActionDeleteRow:    func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
-		ActionRowDelete:    func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
-		ActionInsertRow:    func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) },
-		ActionRowInsert:    func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) },
-		ActionUpdateRow:    func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) },
-		ActionRowUpdate:    func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) },
-		ActionViewDefinition: func(w http.ResponseWriter, r *http.Request) { h.handleViewDefinition(w, r) },
-		ActionProfiles:     func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) },
-		ActionProfilesList: func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) },
-		ActionProfilesSave: func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) },
-		ActionProfileSave:  func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) },
-		ActionSQLExecute:   func(w http.ResponseWriter, r *http.Request) { h.handleSQLExecute(w, r) },
-		ActionSQLExplain:   func(w http.ResponseWriter, r *http.Request) { h.handleSQLExplain(w, r) },
-		ActionDDLCreateTable: func(w http.ResponseWriter, r *http.Request) { h.handleDDLCreateTable(w, r) },
-		ActionTableCreate:    func(w http.ResponseWriter, r *http.Request) { h.handleDDLCreateTable(w, r) },
-		ActionTableEdit:      func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, ActionDDLAlterTable) },
-		ActionTableDrop:      func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, ActionDDLDropTable) },
-		ActionExport:       func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, ActionExport) },
-		ActionImport:       func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, ActionImport) },
-		ActionTableView: func(w http.ResponseWriter, r *http.Request) {
+		constants.ActionPageLogout: func(w http.ResponseWriter, r *http.Request) {
+			full, err := pageLogout.Handle(
+				h.tmplBase, h.opts.BasePath, h.opts.ActionParam, h.opts.SafeModeDefault, csrfToken)
+			if err != nil {
+				log.Printf("render logout: %v", err)
+				h.renderStatus(w, r, http.StatusInternalServerError, "template error")
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(full))
+		},
+		// Legacy mixed action mapped to the new page renderer (GET only)
+		constants.ActionDDLCreateTable: func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				WriteError(w, r, "method not allowed")
+				return
+			}
+			full, err := pageTableCreate.Handle(h.opts.BasePath, h.opts.ActionParam, EnsureCSRFCookie(w, r, h.opts.SessionSecret), h.opts.SafeModeDefault)
+			if err != nil {
+				h.renderStatus(w, r, http.StatusInternalServerError, err.Error())
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(full))
+		},
+		// New explicit page handler for table create
+		constants.ActionPageTableCreate: func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				WriteError(w, r, "method not allowed")
+				return
+			}
+			full, err := pageTableCreate.Handle(h.opts.BasePath, h.opts.ActionParam, EnsureCSRFCookie(w, r, h.opts.SessionSecret), h.opts.SafeModeDefault)
+			if err != nil {
+				h.renderStatus(w, r, http.StatusInternalServerError, err.Error())
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(full))
+		},
+		constants.ActionPageTableView: func(w http.ResponseWriter, r *http.Request) {
 			// temporary redirect to browse_rows while richer view is being built
 			q := r.URL.Query()
 			params := map[string]string{}
-			if schema := q.Get("schema"); schema != "" { params["schema"] = schema }
-			if table := q.Get("table"); table != "" { params["table"] = table }
-			if limit := q.Get("limit"); limit != "" { params["limit"] = limit }
-			if offset := q.Get("offset"); offset != "" { params["offset"] = offset }
-			dest := urls.URL(h.opts.BasePath, ActionBrowseRows, params)
+			if schema := q.Get("schema"); schema != "" {
+				params["schema"] = schema
+			}
+			if table := q.Get("table"); table != "" {
+				params["table"] = table
+			}
+			if limit := q.Get("limit"); limit != "" {
+				params["limit"] = limit
+			}
+			if offset := q.Get("offset"); offset != "" {
+				params["offset"] = offset
+			}
+			dest := urls.URL(h.opts.BasePath, constants.ActionPageTableView, params)
 			http.Redirect(w, r, dest, http.StatusFound)
 		},
+	}
+}
+
+// apiHandlers are POST-only handlers that perform API operations
+func (h *Handler) apiHandlers(r *http.Request, s *Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
+	return map[string]func(http.ResponseWriter, *http.Request){
+		// Connection/API operations
+		constants.ActionConnect:    func(w http.ResponseWriter, r *http.Request) { h.handleConnect(w, r) },
+		constants.ActionDisconnect: func(w http.ResponseWriter, r *http.Request) { h.handleDisconnect(w, r) },
+		// Listing and data APIs
+		constants.ActionListSchemas: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.SchemasList(func(w http.ResponseWriter, r *http.Request) { h.handleListSchemas(w, r) })(w, r)
+		},
+		constants.ActionListTables: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.TablesList(func(w http.ResponseWriter, r *http.Request) { h.handleListTables(w, r) })(w, r)
+		},
+		constants.ActionSchemasList: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.SchemasList(func(w http.ResponseWriter, r *http.Request) { h.handleListSchemas(w, r) })(w, r)
+		},
+		constants.ActionTablesList: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.TablesList(func(w http.ResponseWriter, r *http.Request) { h.handleListTables(w, r) })(w, r)
+		},
+		constants.ActionTableInfo: func(w http.ResponseWriter, r *http.Request) { h.handleTableInfo(w, r) },
+		constants.ActionBrowseRows: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.RowsBrowse(func(w http.ResponseWriter, r *http.Request) { h.handleBrowseRows(w, r) })(w, r)
+		},
+		constants.ActionRowsBrowse: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.RowsBrowse(func(w http.ResponseWriter, r *http.Request) { h.handleBrowseRows(w, r) })(w, r)
+		},
+		constants.ActionRowView: func(w http.ResponseWriter, r *http.Request) { h.handleRowView(w, r) },
+		constants.ActionDeleteRow: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.DeleteRow(func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) })(w, r)
+		},
+		constants.ActionRowDelete: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.DeleteRow(func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) })(w, r)
+		},
+		constants.ActionInsertRow: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.InsertRow(func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) })(w, r)
+		},
+		constants.ActionRowInsert: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.InsertRow(func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) })(w, r)
+		},
+		constants.ActionUpdateRow: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.UpdateRow(func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) })(w, r)
+		},
+		constants.ActionRowUpdate: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.UpdateRow(func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) })(w, r)
+		},
+		constants.ActionViewDefinition: func(w http.ResponseWriter, r *http.Request) { h.handleViewDefinition(w, r) },
+		constants.ActionProfiles: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.Profiles(func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) })(w, r)
+		},
+		constants.ActionProfilesList: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.Profiles(func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) })(w, r)
+		},
+		constants.ActionProfilesSave: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.ProfilesSave(func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) })(w, r)
+		},
+		constants.ActionProfileSave: func(w http.ResponseWriter, r *http.Request) {
+			apipkg.ProfilesSave(func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) })(w, r)
+		},
+		constants.ActionSQLExecute: func(w http.ResponseWriter, r *http.Request) { h.handleSQLExecute(w, r) },
+		constants.ActionSQLExplain: func(w http.ResponseWriter, r *http.Request) { h.handleSQLExplain(w, r) },
+		// New explicit API handler for table create
+		constants.ActionApiTableCreate: func(w http.ResponseWriter, r *http.Request) {
+			if s.Conn == nil || s.Conn.DB == nil {
+				WriteError(w, r, "not connected")
+				return
+			}
+			deps := apitablecreate.Deps{
+				Driver: s.Conn.Driver,
+				Exec:   execAdapter{exec: func(q string) error { return s.Conn.DB.Exec(q).Error }},
+			}
+			apitablecreate.New(deps).Handle(w, r)
+		},
+		constants.ActionTableEdit: func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionDDLAlterTable) },
+		constants.ActionTableDrop: func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionDDLDropTable) },
+		constants.ActionExport:    func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionExport) },
+		constants.ActionImport:    func(w http.ResponseWriter, r *http.Request) { JSONNotImplemented(w, constants.ActionImport) },
+		// Note: no page-only handlers here
 	}
 }
 

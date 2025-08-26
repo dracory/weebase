@@ -1,80 +1,79 @@
 package weebase
 
-import (
-    shconst "github.com/dracory/weebase/shared/constants"
-)
+// shconst "github.com/dracory/weebase/shared/constants"
 
 // Action names for the single-endpoint router. Keep in sync with templates.
-const (
-    ActionHome            = shconst.ActionHome
-    ActionAssetCSS        = shconst.ActionAssetCSS
-    ActionAssetJS         = shconst.ActionAssetJS
-    ActionHealthz         = shconst.ActionHealthz
-    ActionReadyz          = shconst.ActionReadyz
+// const (
+// 	ActionHome     = shconst.ActionHome
+// 	ActionAssetCSS = shconst.ActionAssetCSS
+// 	ActionAssetJS  = shconst.ActionAssetJS
+// 	ActionHealthz  = shconst.ActionHealthz
+// 	ActionReadyz   = shconst.ActionReadyz
 
-    ActionLogin           = shconst.ActionLogin
-    ActionLogout          = shconst.ActionLogout
-    ActionLoginJS         = shconst.ActionLoginJS
-    ActionLoginCSS        = shconst.ActionLoginCSS
+// 	ActionLogin    = shconst.ActionLogin
+// 	ActionLogout   = shconst.ActionLogout
+// 	ActionLoginJS  = shconst.ActionLoginJS
+// 	ActionLoginCSS = shconst.ActionLoginCSS
 
-    ActionConnect         = shconst.ActionConnect
-    ActionDisconnect      = shconst.ActionDisconnect
+// 	ActionConnect    = shconst.ActionConnect
+// 	ActionDisconnect = shconst.ActionDisconnect
 
-    ActionProfiles        = shconst.ActionProfiles
-    ActionProfilesSave    = shconst.ActionProfilesSave
+// 	ActionProfiles     = shconst.ActionProfiles
+// 	ActionProfilesSave = shconst.ActionProfilesSave
 
-    ActionListSchemas     = shconst.ActionListSchemas
-    ActionListTables      = shconst.ActionListTables
-    ActionTableInfo       = shconst.ActionTableInfo
-    ActionViewDefinition  = shconst.ActionViewDefinition
+// 	ActionListSchemas    = shconst.ActionListSchemas
+// 	ActionListTables     = shconst.ActionListTables
+// 	ActionTableInfo      = shconst.ActionTableInfo
+// 	ActionViewDefinition = shconst.ActionViewDefinition
 
-    ActionTableView       = shconst.ActionTableView
+// 	ActionPageTableCreate = shconst.ActionPageTableCreate
+// 	ActionPageTableView   = shconst.ActionTableView
 
-    ActionBrowseRows      = shconst.ActionBrowseRows
-    ActionRowView         = shconst.ActionRowView
-    ActionInsertRow       = shconst.ActionInsertRow
-    ActionUpdateRow       = shconst.ActionUpdateRow
-    ActionDeleteRow       = shconst.ActionDeleteRow
+// 	ActionBrowseRows = shconst.ActionBrowseRows
+// 	ActionRowView    = shconst.ActionRowView
+// 	ActionInsertRow  = shconst.ActionInsertRow
+// 	ActionUpdateRow  = shconst.ActionUpdateRow
+// 	ActionDeleteRow  = shconst.ActionDeleteRow
 
-    ActionSQLExecute      = shconst.ActionSQLExecute
-    ActionSQLExplain      = shconst.ActionSQLExplain
-    ActionListSaved       = shconst.ActionListSaved
-    ActionSaveQuery       = shconst.ActionSaveQuery
+// 	ActionSQLExecute = shconst.ActionSQLExecute
+// 	ActionSQLExplain = shconst.ActionSQLExplain
+// 	ActionListSaved  = shconst.ActionListSaved
+// 	ActionSaveQuery  = shconst.ActionSaveQuery
 
-    ActionDDLCreateTable  = shconst.ActionDDLCreateTable
-    ActionDDLAlterTable   = shconst.ActionDDLAlterTable
-    ActionDDLDropTable    = shconst.ActionDDLDropTable
+// 	ActionDDLCreateTable = shconst.ActionDDLCreateTable
+// 	ActionDDLAlterTable  = shconst.ActionDDLAlterTable
+// 	ActionDDLDropTable   = shconst.ActionDDLDropTable
 
-    ActionExport          = shconst.ActionExport
-    ActionImport          = shconst.ActionImport
-)
+// 	ActionExport = shconst.ActionExport
+// 	ActionImport = shconst.ActionImport
+// 	// Explicit page vs API actions
+// )
 
-// Noun_Verb alias actions for consistency
-const (
-    ActionTablesList   = shconst.ActionTablesList
-    ActionSchemasList  = shconst.ActionSchemasList
+// // Noun_Verb alias actions for consistency
+// const (
+// 	ActionTablesList  = shconst.ActionTablesList
+// 	ActionSchemasList = shconst.ActionSchemasList
 
-    ActionTableCreate  = shconst.ActionTableCreate
-    ActionTableEdit    = shconst.ActionTableEdit
-    ActionTableDrop    = shconst.ActionTableDrop
+// 	ActionApiTableCreate = shconst.ActionTableCreate
+// 	ActionTableEdit      = shconst.ActionTableEdit
+// 	ActionTableDrop      = shconst.ActionTableDrop
 
-    ActionRowsBrowse   = shconst.ActionRowsBrowse
-    ActionRowInsert    = shconst.ActionRowInsert
-    ActionRowUpdate    = shconst.ActionRowUpdate
-    ActionRowDelete    = shconst.ActionRowDelete
+// 	ActionRowsBrowse = shconst.ActionRowsBrowse
+// 	ActionRowInsert  = shconst.ActionRowInsert
+// 	ActionRowUpdate  = shconst.ActionRowUpdate
+// 	ActionRowDelete  = shconst.ActionRowDelete
 
-    ActionProfilesList = shconst.ActionProfilesList
-    ActionProfileSave  = shconst.ActionProfileSave
-)
+// 	ActionProfilesList = shconst.ActionProfilesList
+// 	ActionProfileSave  = shconst.ActionProfileSave
+// )
 
 // Asset paths and content types used by the embedded server.
 const (
-    AssetPathCSS  = "assets/style.css"
-    AssetPathJS   = "assets/app.js"
-    ContentTypeCSS = "text/css; charset=utf-8"
-    ContentTypeJS  = "application/javascript; charset=utf-8"
+	AssetPathCSS   = "assets/style.css"
+	AssetPathJS    = "assets/app.js"
+	ContentTypeCSS = "text/css; charset=utf-8"
+	ContentTypeJS  = "application/javascript; charset=utf-8"
 
-    LoginAssetPathJS  = "pages/login/script.js"
-    LoginAssetPathCSS = "pages/login/styles.css"
+	LoginAssetPathJS  = "pages/login/script.js"
+	LoginAssetPathCSS = "pages/login/styles.css"
 )
-

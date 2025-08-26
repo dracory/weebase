@@ -1,4 +1,4 @@
-package login
+package page_login
 
 import (
 	"embed"

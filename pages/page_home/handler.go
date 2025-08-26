@@ -1,4 +1,4 @@
-package home
+package page_home
 
 import (
 	"html/template"
@@ -68,9 +68,9 @@ func Handle(
 
 	listURL := urls.URL(basePath, constants.ActionListTables, nil)
 	browseBase := urls.URL(basePath, constants.ActionBrowseRows, nil)
-	tableViewURL := urls.URL(basePath, constants.ActionTableView, nil)
+	tableViewURL := urls.URL(basePath, constants.ActionPageTableView, nil)
 	sqlURL := urls.URL(basePath, constants.ActionSQLExecute, nil)
-	createTableURL := urls.URL(basePath, constants.ActionDDLCreateTable, nil)
+	createTableURL := urls.URL(basePath, constants.ActionPageTableCreate, nil)
 	importURL := urls.URL(basePath, constants.ActionImport, nil)
 	exportURL := urls.URL(basePath, constants.ActionExport, nil)
 

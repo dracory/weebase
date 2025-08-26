@@ -1,4 +1,4 @@
-package logout
+package page_logout
 
 import (
 	"embed"
@@ -21,19 +21,19 @@ func Handle(
 	template.HTML,
 	error,
 ) {
-	// data := map[string]any{
-	// 	"Title":       "Logout",
-	// 	"BasePath":    basePath,
-	// 	"ActionParam": actionParam,
-	// 	"CSRFToken":   csrfToken,
-	// }
-
 	pageHTML, err := view()
 	if err != nil {
 		return "", err
 	}
 
-	full := layout.Render("Logout", basePath, safeModeDefault, pageHTML, nil, nil)
+	full := layout.RenderWith(layout.Options{
+		Title:           "Logout",
+		BasePath:        basePath,
+		SafeModeDefault: safeModeDefault,
+		MainHTML:        pageHTML,
+		ExtraHead:       nil,
+		ExtraBodyEnd:    nil,
+	})
 	return full, nil
 }
 

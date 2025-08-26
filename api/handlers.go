@@ -2,15 +2,32 @@ package api
 
 import (
 	"net/http"
-
-	"github.com/dracory/weebase/internal/ports"
 )
 
-// TablesList handles GET tables list via the ports.DBAPI interface.
-func TablesList(api ports.DBAPI, w http.ResponseWriter, r *http.Request) { api.ListTables(w, r) }
+// HandlerFunc is a plain HTTP handler signature passed in by the router.
+type HandlerFunc func(http.ResponseWriter, *http.Request)
 
-// SchemasList handles GET schemas list via the ports.DBAPI interface.
-func SchemasList(api ports.DBAPI, w http.ResponseWriter, r *http.Request) { api.ListSchemas(w, r) }
+// TablesList forwards to the provided handler function.
+func TablesList(fn HandlerFunc) http.HandlerFunc { return http.HandlerFunc(fn) }
 
-// RowsBrowse handles browsing rows via the ports.DBAPI interface.
-func RowsBrowse(api ports.DBAPI, w http.ResponseWriter, r *http.Request) { api.BrowseRows(w, r) }
+// SchemasList forwards to the provided handler function.
+func SchemasList(fn HandlerFunc) http.HandlerFunc { return http.HandlerFunc(fn) }
+
+// RowsBrowse forwards to the provided handler function.
+func RowsBrowse(fn HandlerFunc) http.HandlerFunc { return http.HandlerFunc(fn) }
+
+
+// Profiles forwards to the provided handler function.
+func Profiles(fn HandlerFunc) http.HandlerFunc { return http.HandlerFunc(fn) }
+
+// ProfilesSave forwards to the provided handler function.
+func ProfilesSave(fn HandlerFunc) http.HandlerFunc { return http.HandlerFunc(fn) }
+
+// InsertRow forwards to the provided handler function.
+func InsertRow(fn HandlerFunc) http.HandlerFunc { return http.HandlerFunc(fn) }
+
+// UpdateRow forwards to the provided handler function.
+func UpdateRow(fn HandlerFunc) http.HandlerFunc { return http.HandlerFunc(fn) }
+
+// DeleteRow forwards to the provided handler function.
+func DeleteRow(fn HandlerFunc) http.HandlerFunc { return http.HandlerFunc(fn) }

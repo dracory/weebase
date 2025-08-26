@@ -1,4 +1,4 @@
-package table_create
+package page_table_create
 
 import (
 	"embed"
@@ -7,8 +7,8 @@ import (
 	"github.com/dracory/weebase/shared"
 	layout "github.com/dracory/weebase/shared/layout"
 	"github.com/dracory/weebase/shared/urls"
-	hb "github.com/gouniverse/hb"
 	"github.com/gouniverse/cdn"
+	hb "github.com/gouniverse/hb"
 )
 
 //go:embed view.html script.js styles.css
@@ -32,8 +32,8 @@ func Handle(basePath, actionParam, csrfToken string, safeModeDefault bool) (temp
 	extraHead := []hb.TagInterface{
 		hb.Style(pageCSS),
 	}
-	// Compute URLs similarly to pages/login
-	actionUrl := urls.TableCreate(basePath, nil)
+	// Compute URLs: page renders here, POST goes to API action
+	actionUrl := urls.APITableCreate(basePath, nil)
 	redirectUrl := urls.Home(basePath, nil)
 
 	extraBody := []hb.TagInterface{
