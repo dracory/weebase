@@ -1,9 +1,9 @@
 package api_tables_list
 
 import (
-	"encoding/json"
 	"net/http"
 
+	"github.com/dracory/api"
 	"github.com/dracory/weebase/shared/session"
 	"gorm.io/gorm"
 )
@@ -21,26 +21,46 @@ func New(conn *session.ActiveConnection) *TablesList {
 // Handle processes the request
 func (h *TablesList) Handle(w http.ResponseWriter, r *http.Request) {
 	if h.conn == nil || h.conn.DB == nil {
-		http.Error(w, "Not connected to database", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		api.Respond(w, r, api.Error("not connected to database"))
 		return
 	}
 
 	// Get the database connection
 	db, ok := h.conn.DB.(*gorm.DB)
 	if !ok {
-		http.Error(w, "Invalid database connection type", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		api.Respond(w, r, api.Error("invalid database connection type"))
 		return
 	}
 
-	// Query to get tables
+	// Try to get the database dialect
+	dialect := db.Dialector.Name()
 	var tables []string
-	result := db.Raw("SHOW TABLES").Scan(&tables)
+	var result *gorm.DB
+
+	switch dialect {
+	case "sqlite":
+		// SQLite specific query
+		type sqliteTable struct {
+			Name string `gorm:"column:name"`
+		}
+		var sqliteTables []sqliteTable
+		result = db.Raw("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != 'migrations' ORDER BY name").Scan(&sqliteTables)
+		for _, t := range sqliteTables {
+			tables = append(tables, t.Name)
+		}
+	default:
+		// Default to MySQL/PostgreSQL style SHOW TABLES
+		result = db.Raw("SHOW TABLES").Scan(&tables)
+	}
+
 	if result.Error != nil {
-		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		api.Respond(w, r, api.Error(result.Error.Error()))
 		return
 	}
 
-	// Return the tables as JSON
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tables)
+	api.Respond(w, r, api.SuccessWithData("Tables listed successfully", map[string]any{
+		"tables": tables,
+	}))
 }
