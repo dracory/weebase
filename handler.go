@@ -12,9 +12,11 @@ import (
 
 	"gorm.io/gorm"
 
-	apiRowsBrowse "github.com/dracory/weebase/api/api_rows_browse"
 	apiRowView "github.com/dracory/weebase/api/api_row_view"
+	apiRowsBrowse "github.com/dracory/weebase/api/api_rows_browse"
 	apiSchemasList "github.com/dracory/weebase/api/api_schemas_list"
+	apiSQLExecute "github.com/dracory/weebase/api/api_sql_execute"
+	apiSQLExplain "github.com/dracory/weebase/api/api_sql_explain"
 	apiTableCreate "github.com/dracory/weebase/api/api_table_create"
 	apiTablesList "github.com/dracory/weebase/api/api_tables_list"
 	pageHome "github.com/dracory/weebase/pages/page_home"
@@ -22,10 +24,10 @@ import (
 	pageLogout "github.com/dracory/weebase/pages/page_logout"
 	pageTableCreate "github.com/dracory/weebase/pages/page_table_create"
 	"github.com/dracory/weebase/shared/constants"
-	layout "github.com/dracory/weebase/shared/layout"
+	"github.com/dracory/weebase/shared/layout"
 	"github.com/dracory/weebase/shared/session"
 	"github.com/dracory/weebase/shared/urls"
-	hb "github.com/gouniverse/hb"
+	"github.com/gouniverse/hb"
 )
 
 // newSessionID generates a new random session ID
@@ -299,8 +301,8 @@ func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken str
 		constants.ActionProfileSave:  func(w http.ResponseWriter, r *http.Request) { h.handleProfilesSave(w, r) },
 
 		// SQL operations
-		constants.ActionSQLExecute: func(w http.ResponseWriter, r *http.Request) { h.handleSQLExecute(w, r) },
-		constants.ActionSQLExplain: func(w http.ResponseWriter, r *http.Request) { h.handleSQLExplain(w, r) },
+		constants.ActionSQLExecute: apiSQLExecute.New(s.Conn, h.opts.SafeModeDefault, h.opts.ReadOnlyMode).Handle,
+		constants.ActionSQLExplain: apiSQLExplain.New(s.Conn).Handle,
 
 		// Table operations
 		constants.ActionApiTableCreate: apiTableCreate.New(s.Conn).Handle,
