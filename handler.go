@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	apipkg "github.com/dracory/weebase/api"
 	homepage "github.com/dracory/weebase/pages/home"
 	loginpage "github.com/dracory/weebase/pages/login"
 	layout "github.com/dracory/weebase/shared/layout"
@@ -166,13 +167,13 @@ func (h *Handler) actionHandlers(r *http.Request, s *Session, csrfToken string) 
 		ActionLogout:       func(w http.ResponseWriter, r *http.Request) { h.handleLogout(w, r, csrfToken) },
 		ActionConnect:      func(w http.ResponseWriter, r *http.Request) { h.handleConnect(w, r) },
 		ActionDisconnect:   func(w http.ResponseWriter, r *http.Request) { h.handleDisconnect(w, r) },
-		ActionListSchemas:  func(w http.ResponseWriter, r *http.Request) { h.handleListSchemas(w, r) },
-		ActionListTables:   func(w http.ResponseWriter, r *http.Request) { h.handleListTables(w, r) },
-		ActionSchemasList:  func(w http.ResponseWriter, r *http.Request) { h.handleListSchemas(w, r) },
-		ActionTablesList:   func(w http.ResponseWriter, r *http.Request) { h.handleListTables(w, r) },
+		ActionListSchemas:  func(w http.ResponseWriter, r *http.Request) { apipkg.SchemasList(h, w, r) },
+		ActionListTables:   func(w http.ResponseWriter, r *http.Request) { apipkg.TablesList(h, w, r) },
+		ActionSchemasList:  func(w http.ResponseWriter, r *http.Request) { apipkg.SchemasList(h, w, r) },
+		ActionTablesList:   func(w http.ResponseWriter, r *http.Request) { apipkg.TablesList(h, w, r) },
 		ActionTableInfo:    func(w http.ResponseWriter, r *http.Request) { h.handleTableInfo(w, r) },
-		ActionBrowseRows:   func(w http.ResponseWriter, r *http.Request) { h.handleBrowseRows(w, r) },
-		ActionRowsBrowse:   func(w http.ResponseWriter, r *http.Request) { h.handleBrowseRows(w, r) },
+		ActionBrowseRows:   func(w http.ResponseWriter, r *http.Request) { apipkg.RowsBrowse(h, w, r) },
+		ActionRowsBrowse:   func(w http.ResponseWriter, r *http.Request) { apipkg.RowsBrowse(h, w, r) },
 		ActionRowView:      func(w http.ResponseWriter, r *http.Request) { h.handleRowView(w, r) },
 		ActionDeleteRow:    func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
 		ActionRowDelete:    func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
