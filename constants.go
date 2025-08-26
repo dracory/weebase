@@ -1,55 +1,59 @@
 package weebase
 
+import (
+    shconst "github.com/dracory/weebase/shared/constants"
+)
+
 // Action names for the single-endpoint router. Keep in sync with templates.
 const (
-	ActionHome            = "home"
-	ActionAssetCSS        = "asset_css"
-	ActionAssetJS         = "asset_js"
-	ActionHealthz         = "healthz"
-	ActionReadyz          = "readyz"
+    ActionHome            = shconst.ActionHome
+    ActionAssetCSS        = shconst.ActionAssetCSS
+    ActionAssetJS         = shconst.ActionAssetJS
+    ActionHealthz         = shconst.ActionHealthz
+    ActionReadyz          = shconst.ActionReadyz
 
-	ActionLogin           = "login"
-	ActionLogout          = "logout"
-	ActionLoginJS         = "login_js"
-	ActionLoginCSS        = "login_css"
+    ActionLogin           = shconst.ActionLogin
+    ActionLogout          = shconst.ActionLogout
+    ActionLoginJS         = shconst.ActionLoginJS
+    ActionLoginCSS        = shconst.ActionLoginCSS
 
-	ActionConnect         = "connect"
-	ActionDisconnect      = "disconnect"
+    ActionConnect         = shconst.ActionConnect
+    ActionDisconnect      = shconst.ActionDisconnect
 
-	ActionProfiles        = "profiles"
-	ActionProfilesSave    = "profiles_save"
+    ActionProfiles        = shconst.ActionProfiles
+    ActionProfilesSave    = shconst.ActionProfilesSave
 
-	ActionListSchemas     = "list_schemas"
-	ActionListTables      = "list_tables"
-	ActionTableInfo       = "table_info"
-	ActionViewDefinition  = "view_definition"
+    ActionListSchemas     = shconst.ActionListSchemas
+    ActionListTables      = shconst.ActionListTables
+    ActionTableInfo       = shconst.ActionTableInfo
+    ActionViewDefinition  = shconst.ActionViewDefinition
 
-	ActionBrowseRows      = "browse_rows"
-	ActionRowView         = "row_view"
-	ActionInsertRow       = "insert_row"
-	ActionUpdateRow       = "update_row"
-	ActionDeleteRow       = "delete_row"
+    ActionBrowseRows      = shconst.ActionBrowseRows
+    ActionRowView         = shconst.ActionRowView
+    ActionInsertRow       = shconst.ActionInsertRow
+    ActionUpdateRow       = shconst.ActionUpdateRow
+    ActionDeleteRow       = shconst.ActionDeleteRow
 
-	ActionSQLExecute      = "sql_execute"
-	ActionSQLExplain      = "sql_explain"
-	ActionListSaved       = "list_saved_queries"
-	ActionSaveQuery       = "save_query"
+    ActionSQLExecute      = shconst.ActionSQLExecute
+    ActionSQLExplain      = shconst.ActionSQLExplain
+    ActionListSaved       = shconst.ActionListSaved
+    ActionSaveQuery       = shconst.ActionSaveQuery
 
-	ActionDDLCreateTable  = "ddl_create_table"
-	ActionDDLAlterTable   = "ddl_alter_table"
-	ActionDDLDropTable    = "ddl_drop_table"
+    ActionDDLCreateTable  = shconst.ActionDDLCreateTable
+    ActionDDLAlterTable   = shconst.ActionDDLAlterTable
+    ActionDDLDropTable    = shconst.ActionDDLDropTable
 
-	ActionExport          = "export"
-	ActionImport          = "import"
+    ActionExport          = shconst.ActionExport
+    ActionImport          = shconst.ActionImport
 )
 
 // Asset paths and content types used by the embedded server.
 const (
-	AssetPathCSS  = "assets/style.css"
-	AssetPathJS   = "assets/app.js"
-	ContentTypeCSS = "text/css; charset=utf-8"
-	ContentTypeJS  = "application/javascript; charset=utf-8"
+    AssetPathCSS  = "assets/style.css"
+    AssetPathJS   = "assets/app.js"
+    ContentTypeCSS = "text/css; charset=utf-8"
+    ContentTypeJS  = "application/javascript; charset=utf-8"
 
-	LoginAssetPathJS  = "pages/login/script.js"
-	LoginAssetPathCSS = "pages/login/styles.css"
+    LoginAssetPathJS  = "pages/login/script.js"
+    LoginAssetPathCSS = "pages/login/styles.css"
 )

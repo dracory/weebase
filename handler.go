@@ -1,7 +1,6 @@
 package weebase
 
 import (
-	"bytes"
 	"html/template"
 	"log"
 	"net/http"
@@ -9,7 +8,7 @@ import (
 	"strings"
 
 	loginpage "github.com/dracory/weebase/pages/login"
-	layout "github.com/dracory/weebase/shared/layout"
+	homepage "github.com/dracory/weebase/pages/home"
 )
 
 // Handler implements http.Handler for the single-endpoint router controlled by a query action.
@@ -68,7 +67,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("X-Frame-Options", "DENY")
 	w.Header().Set("Referrer-Policy", "no-referrer")
-	w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://unpkg.com")
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net")
 
 	// Ensure a session exists (sets cookie if missing)
 	s := EnsureSession(w, r, h.opts.SessionSecret)
@@ -105,7 +104,19 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	switch action {
 	case "", ActionHome:
-		h.handleHome(w, r, csrfToken)
+		// Render home page via pages/home package
+		var connInfo map[string]any
+		if s.Conn != nil {
+			connInfo = map[string]any{"driver": s.Conn.Driver}
+		}
+		full, err := homepage.Handle(h.tmplBase, h.opts.BasePath, h.opts.ActionParam, h.drivers.List(), h.opts.AllowAdHocConnections, h.opts.SafeModeDefault, csrfToken, connInfo)
+		if err != nil {
+			log.Printf("render home: %v", err)
+			h.renderStatus(w, r, http.StatusInternalServerError, "template error")
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(full))
 		return
 	case ActionAssetCSS:
 		serveAsset(w, r, AssetPathCSS, ContentTypeCSS)
@@ -211,35 +222,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
-func (h *Handler) handleHome(w http.ResponseWriter, r *http.Request, csrfToken string) {
-	s := EnsureSession(w, r, h.opts.SessionSecret)
-	var connInfo map[string]any
-	if s.Conn != nil {
-		connInfo = map[string]any{"driver": s.Conn.Driver}
-	}
-	data := map[string]any{
-		"Title":                 "WeeBase",
-		"BasePath":              h.opts.BasePath,
-		"ActionParam":           h.opts.ActionParam,
-		"EnabledDrivers":        h.drivers.List(),
-		"AllowAdHocConnections": h.opts.AllowAdHocConnections,
-		"SafeModeDefault":       h.opts.SafeModeDefault,
-		"CSRFToken":             csrfToken,
-		"Conn":                  connInfo,
-	}
-	// Render content-only template into buffer
-	var buf bytes.Buffer
-	if err := h.tmplBase.ExecuteTemplate(&buf, "index_content", data); err != nil {
-		log.Printf("render home content: %v", err)
-		h.renderStatus(w, r, http.StatusInternalServerError, "template error")
-		return
-	}
-	// Wrap with shared layout
-	full := layout.Render("Home", h.opts.BasePath, h.opts.SafeModeDefault, buf.String(), nil, nil)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(full))
-}
+ 
 
 func (h *Handler) renderStatus(w http.ResponseWriter, r *http.Request, code int, msg string) {
 	w.WriteHeader(code)

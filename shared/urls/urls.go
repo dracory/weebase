@@ -3,6 +3,8 @@ package urls
 import (
 	neturl "net/url"
 	"sort"
+
+	"github.com/dracory/weebase/shared/constants"
 )
 
 const actionParam = "action"
@@ -11,6 +13,18 @@ const actionParam = "action"
 // Signature: Login(params)
 func Login(basePath string, params map[string]string) string {
 	return URL(basePath, "login", params)
+}
+
+// Connect is a convenience wrapper to construct the connect endpoint URL.
+// Signature: Connect(basePath, params)
+func Connect(basePath string, params map[string]string) string {
+    return URL(basePath, constants.ActionConnect, params)
+}
+
+// Profiles is a convenience wrapper to construct the profiles endpoint URL.
+// Signature: Profiles(basePath, params)
+func Profiles(basePath string, params map[string]string) string {
+	return URL(basePath, "profiles", params)
 }
 
 // URL is a convenience wrapper using defaults: basePath "/db" and actionParam "action".

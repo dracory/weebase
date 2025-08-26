@@ -1,11 +1,7 @@
-<section id="loginApp" data-basepath="{{.BasePath}}" data-actionparam="{{.ActionParam}}" data-csrf="{{.CSRFToken}}">
+<section id="loginApp">
   <h2>Login</h2>
   <div class="wb-grid">
     <div>
-        <form method="post" action="{{.BasePath}}" onsubmit="return adminerSubmitFallback(this);">
-          <input type="hidden" name="{{.ActionParam}}" value="connect">
-          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-          <input type="hidden" name="dsn" id="wb_dsn">
           <table class="wb-form">
           <tr>
             <th>System</th>
@@ -41,12 +37,11 @@
           <tr>
             <td></td>
             <td>
-              <button type="submit" @click="submit">Login</button>
+              <button type="button" @click="submit">Login</button>
               <label style="margin-left:1em"><input type="checkbox" v-model="remember" name="remember" value="1"> Permanent login</label>
             </td>
           </tr>
           </table>
-        </form>
     </div>
   </div>
 </section>

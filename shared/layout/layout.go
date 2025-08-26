@@ -53,6 +53,7 @@ func RenderWith(o Options) template.HTML {
 		hb.A().Href(o.BasePath + "?action=healthz").Text("Health"),
 		hb.A().Href(o.BasePath + "?action=readyz").Text("Ready"),
 	})
+
 	header := hb.Header().Class("wb-header").Child(
 		hb.Div().Class("wb-container").Children([]hb.TagInterface{
 			hb.Heading1().Class("wb-title").Child(hb.A().Href(o.BasePath).Text("WeeBase")),
@@ -61,10 +62,10 @@ func RenderWith(o Options) template.HTML {
 	)
 
 	// Main content wraps the provided HTML
-	main := hb.NewTag("main").Class("wb-main wb-container").Child(hb.Raw(string(o.MainHTML)))
+	main := hb.Main().Class("wb-main wb-container").Child(hb.Raw(string(o.MainHTML)))
 
 	// Footer
-	footer := hb.NewTag("footer").Class("wb-footer wb-container").Child(
+	footer := hb.Footer().Class("wb-footer wb-container").Child(
 		hb.NewTag("small").Child(hb.Text("Safe mode: ")).ChildIf(o.SafeModeDefault, hb.Text("ON")).ChildIf(!o.SafeModeDefault, hb.Text("OFF")),
 	)
 

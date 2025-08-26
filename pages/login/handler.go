@@ -1,16 +1,17 @@
 package login
 
 import (
-	"bytes"
 	"embed"
 	"html/template"
 
 	"github.com/dracory/weebase/shared"
 	layout "github.com/dracory/weebase/shared/layout"
+	"github.com/dracory/weebase/shared/urls"
+	"github.com/gouniverse/cdn"
 	hb "github.com/gouniverse/hb"
 )
 
-//go:embed view.html
+//go:embed view.html script.js styles.css
 var embeddedFS embed.FS
 
 // Handle renders the Adminer-style login/connect form page and returns full HTML.
@@ -25,17 +26,22 @@ func Handle(
 	template.HTML,
 	error,
 ) {
-	// data := map[string]any{
-	// 	"Title":                 "Login",
-	// 	"BasePath":              basePath,
-	// 	"ActionParam":           actionParam,
-	// 	"EnabledDrivers":        enabledDrivers,
-	// 	"AllowAdHocConnections": allowAdHocConnections,
-	// 	"SafeModeDefault":       safeModeDefault,
-	// 	"CSRFToken":             csrfToken,
-	// }
+	// ActionConnect is handled as its own action; build direct connect URL
+	actionUrl := urls.Connect(basePath, nil)
 
-	//pageHTML, err := renderLoginContent(tmpl, data)
+	// Precompute profiles URL using urls.Profiles helper
+	profilesUrl := urls.Profiles(basePath, nil)
+
+	pageCSS, err := css()
+	if err != nil {
+		return "", err
+	}
+
+	pageJS, err := js()
+	if err != nil {
+		return "", err
+	}
+
 	pageHTML, err := view()
 	if err != nil {
 		return "", err
@@ -43,15 +49,18 @@ func Handle(
 
 	// Page-specific assets
 	extraHead := []hb.TagInterface{
-		hb.StyleURL(basePath + "?" + actionParam + "=login_css"),
+		hb.Style(pageCSS),
 	}
 
 	extraBody := []hb.TagInterface{
 		// Vue 3 CDN
-		hb.ScriptURL("https://unpkg.com/vue@3/dist/vue.global.prod.js"),
-
-		// Page script
-		hb.ScriptURL(basePath + "?" + actionParam + "=login_js"),
+		hb.ScriptURL(cdn.VueJs_3()),
+		hb.ScriptURL(cdn.Sweetalert2_11()),
+		hb.Script(`window.urlAction = "` + template.JSEscapeString(actionUrl) + `"`),
+		hb.Script(`window.urlProfiles = "` + template.JSEscapeString(profilesUrl) + `"`),
+		hb.Script(`window.urlRedirect = "` + template.JSEscapeString(basePath) + `"`),
+		hb.Script(`window.csrfToken = "` + template.JSEscapeString(csrfToken) + `"`),
+		hb.Script(pageJS),
 	}
 
 	full := layout.RenderWith(layout.Options{
@@ -65,19 +74,27 @@ func Handle(
 	return full, nil
 }
 
-func view() (string, error) {
-	view, err := shared.EmbeddedFileToString(embeddedFS, "view.html")
+func css() (string, error) {
+	css, err := shared.EmbeddedFileToString(embeddedFS, "styles.css")
 	if err != nil {
 		return "", err
 	}
-	return view, nil
+	return css, nil
 }
 
-// renderLoginContent renders the login page inner content template and returns safe HTML.
-func renderLoginContent(tmpl *template.Template, data map[string]any) (template.HTML, error) {
-	var buf bytes.Buffer
-	if err := tmpl.ExecuteTemplate(&buf, "pages/login/content", data); err != nil {
+func js() (string, error) {
+	js, err := shared.EmbeddedFileToString(embeddedFS, "script.js")
+	if err != nil {
 		return "", err
 	}
-	return template.HTML(buf.String()), nil
+	return js, nil
+}
+
+func view() (string, error) {
+	html, err := shared.EmbeddedFileToString(embeddedFS, "view.html")
+	if err != nil {
+		return "", err
+	}
+
+	return html, nil
 }
