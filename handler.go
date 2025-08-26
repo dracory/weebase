@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
-
 	apiConnect "github.com/dracory/weebase/api/api_connect"
 	apiDisconnect "github.com/dracory/weebase/api/api_disconnect"
 	apiProfilesList "github.com/dracory/weebase/api/api_profiles_list"
@@ -145,11 +143,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	action := r.URL.Query().Get(h.opts.ActionParam)
 	if s.Conn == nil && r.Method == http.MethodGet {
 		switch action {
-		case constants.ActionPageLogin,
+		case "",
 			constants.ActionAssetCSS,
-			constants.ActionAssetJS,
-			constants.ActionHealthz,
-			constants.ActionReadyz:
+			constants.ActionAssetJS:
 			// allow
 		default:
 			http.Redirect(w, r, urls.Login(h.opts.BasePath), http.StatusFound)
@@ -186,24 +182,6 @@ func (h *Handler) pageHandlers(s *session.Session, csrfToken string) map[string]
 	return map[string]func(http.ResponseWriter, *http.Request){
 		constants.ActionAssetCSS: func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathCSS, ContentTypeCSS) },
 		constants.ActionAssetJS:  func(w http.ResponseWriter, r *http.Request) { serveAsset(w, r, AssetPathJS, ContentTypeJS) },
-		constants.ActionHealthz: func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte("ok"))
-		},
-		constants.ActionReadyz: func(w http.ResponseWriter, r *http.Request) {
-			if s.Conn != nil {
-				if gormDB, ok := s.Conn.DB.(*gorm.DB); ok {
-					if sqlDB, err := gormDB.DB(); err == nil {
-						if err := sqlDB.Ping(); err != nil {
-							http.Error(w, "not ready", http.StatusServiceUnavailable)
-							return
-						}
-					}
-				}
-			}
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte("ready"))
-		},
 		constants.ActionHome: func(w http.ResponseWriter, r *http.Request) {
 			var connInfo map[string]any
 			if s.Conn != nil {
