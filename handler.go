@@ -12,12 +12,15 @@ import (
 
 	"gorm.io/gorm"
 
+	apiRowInsert "github.com/dracory/weebase/api/api_row_insert"
+	apiRowUpdate "github.com/dracory/weebase/api/api_row_update"
 	apiRowView "github.com/dracory/weebase/api/api_row_view"
 	apiRowsBrowse "github.com/dracory/weebase/api/api_rows_browse"
 	apiSchemasList "github.com/dracory/weebase/api/api_schemas_list"
 	apiSQLExecute "github.com/dracory/weebase/api/api_sql_execute"
 	apiSQLExplain "github.com/dracory/weebase/api/api_sql_explain"
 	apiTableCreate "github.com/dracory/weebase/api/api_table_create"
+	apiTableInfo "github.com/dracory/weebase/api/api_table_info"
 	apiTablesList "github.com/dracory/weebase/api/api_tables_list"
 	pageHome "github.com/dracory/weebase/pages/page_home"
 	pageLogin "github.com/dracory/weebase/pages/page_login"
@@ -281,7 +284,6 @@ func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken str
 		constants.ActionSchemasList: apiSchemasList.New(s.Conn).Handle,
 		constants.ActionListTables:  apiTablesList.New(s.Conn).Handle,
 		constants.ActionTablesList:  apiTablesList.New(s.Conn).Handle,
-		constants.ActionTableInfo:   func(w http.ResponseWriter, r *http.Request) { h.handleTableInfo(w, r) },
 
 		// Row operations
 		constants.ActionBrowseRows: apiRowsBrowse.New(s.Conn).Handle,
@@ -289,10 +291,10 @@ func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken str
 		constants.ActionRowView:    apiRowView.New(s.Conn).Handle,
 		constants.ActionDeleteRow:  func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
 		constants.ActionRowDelete:  func(w http.ResponseWriter, r *http.Request) { h.handleDeleteRow(w, r) },
-		constants.ActionInsertRow:  func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) },
-		constants.ActionRowInsert:  func(w http.ResponseWriter, r *http.Request) { h.handleInsertRow(w, r) },
-		constants.ActionUpdateRow:  func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) },
-		constants.ActionRowUpdate:  func(w http.ResponseWriter, r *http.Request) { h.handleUpdateRow(w, r) },
+		constants.ActionInsertRow:  apiRowInsert.New(s.Conn, h.opts.SafeModeDefault).Handle,
+		constants.ActionRowInsert:  apiRowInsert.New(s.Conn, h.opts.SafeModeDefault).Handle,
+		constants.ActionUpdateRow:  apiRowUpdate.New(s.Conn, h.opts.SafeModeDefault).Handle,
+		constants.ActionRowUpdate:  apiRowUpdate.New(s.Conn, h.opts.SafeModeDefault).Handle,
 
 		// Profiles
 		constants.ActionProfiles:     func(w http.ResponseWriter, r *http.Request) { h.handleProfiles(w, r) },
@@ -305,6 +307,7 @@ func (h *Handler) apiHandlers(r *http.Request, s *session.Session, csrfToken str
 		constants.ActionSQLExplain: apiSQLExplain.New(s.Conn).Handle,
 
 		// Table operations
+		constants.ActionTableInfo:      apiTableInfo.New(s.Conn).Handle,
 		constants.ActionApiTableCreate: apiTableCreate.New(s.Conn).Handle,
 
 		// Import/Export (not implemented yet)
