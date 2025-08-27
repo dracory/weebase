@@ -1,47 +1,64 @@
-<section id="loginApp">
-  <h2>Login</h2>
-  <div class="wb-grid">
-    <div>
-          <table class="wb-form">
-          <tr>
-            <th>System</th>
-            <td>
-              <select v-model="driver" name="driver" required>
-                <option value="postgres">PostgreSQL</option>
-                <option value="mysql">MySQL</option>
-                <option value="sqlite">SQLite</option>
-                <option value="sqlserver">SQL Server</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <th>Server</th>
-            <td><input v-model="server" name="server" placeholder="localhost"></td>
-          </tr>
-          <tr>
-            <th>Port</th>
-            <td><input v-model="port" name="port" placeholder="optional"></td>
-          </tr>
-          <tr>
-            <th>Username</th>
-            <td><input v-model="username" name="username" autocomplete="username"></td>
-          </tr>
-          <tr>
-            <th>Password</th>
-            <td><input type="password" v-model="password" name="password" autocomplete="current-password"></td>
-          </tr>
-          <tr>
-            <th>Database</th>
-            <td><input v-model="database" name="database" placeholder="optional"></td>
-          </tr>
-          <tr>
-            <td></td>
-            <td>
-              <button type="button" @click="submit">Login</button>
-              <label style="margin-left:1em"><input type="checkbox" v-model="remember" name="remember" value="1"> Permanent login</label>
-            </td>
-          </tr>
-          </table>
+<div class="login-container">
+  <div class="login-box">
+    <h2>Database Manager</h2>
+    
+    <div id="loginApp">
+      <div class="form-group">
+        <label>Database Type</label>
+        <select v-model="driver" class="form-control" required>
+          <option value="postgres">PostgreSQL</option>
+          <option value="mysql">MySQL</option>
+          <option value="sqlite">SQLite</option>
+          <option value="sqlserver">SQL Server</option>
+        </select>
+      </div>
+
+      <template v-if="driver !== 'sqlite'">
+        <div class="form-group">
+          <label>Server</label>
+          <input v-model="server" type="text" class="form-control" required placeholder="localhost">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Port</label>
+            <input v-model="port" type="text" class="form-control" :placeholder="driver === 'mysql' ? '3306' : driver === 'postgres' ? '5432' : '1433'">
+          </div>
+          <div class="form-group">
+            <label>Database</label>
+            <input v-model="database" type="text" class="form-control" placeholder="database_name">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Username</label>
+            <input v-model="username" type="text" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input v-model="password" type="password" class="form-control">
+          </div>
+        </div>
+      </template>
+
+      <template v-else>
+        <div class="form-group">
+          <label>Database File</label>
+          <input v-model="database" type="text" class="form-control" required placeholder="path/to/database.sqlite">
+        </div>
+      </template>
+
+      <div class="form-footer">
+        <div class="remember-me">
+          <input type="checkbox" v-model="remember" id="remember">
+          <label for="remember">Remember me</label>
+        </div>
+        <button @click="submit" class="btn btn-primary">
+          <span v-if="!isLoading">Connect</span>
+          <span v-else>Connecting...</span>
+        </button>
+      </div>
     </div>
   </div>
-</section>
+</div>

@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/dracory/weebase/shared/constants"
 	weebase "github.com/dracory/weebase"
+	"github.com/dracory/weebase/shared/constants"
 )
 
 func main() {
@@ -30,13 +30,14 @@ func main() {
 		SessionSecret:         cfg.SessionSecret,
 	})
 
+	addr := fmt.Sprintf(":%d", cfg.HTTPPort)
+	log.Printf("WeeBase listening on %s (mount %s)", addr, cfg.BasePath)
+
 	mux := http.NewServeMux()
 	weebase.Register(mux, cfg.BasePath, h)
 
 	// Wrap with request logging middleware
 	handler := weebase.RequestLogger(mux)
 
-	addr := fmt.Sprintf(":%d", cfg.HTTPPort)
-	log.Printf("WeeBase listening on %s (mount %s)", addr, cfg.BasePath)
 	log.Fatal(http.ListenAndServe(addr, handler))
 }

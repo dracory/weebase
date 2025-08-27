@@ -5,15 +5,37 @@ import (
 	"fmt"
 
 	"github.com/dracory/env"
+	"github.com/dracory/weebase/shared/web"
 )
 
-// Config holds runtime configuration sourced from env and flags.
+// Config holds all configuration for the Weebase instance
 type Config struct {
-	HTTPPort              int
-	BasePath              string
-	SessionSecret         string
-	AllowAdHocConnections bool
-	SafeModeDefault       bool
+	// Server settings
+	HTTPPort      int    // Port to listen on (default: 8080)
+	BasePath      string // Base URL path (default: "/")
+	SessionSecret string // Secret for session encryption
+
+	// Security settings
+	AllowAdHocConnections bool // Whether to allow ad-hoc database connections
+	SafeModeDefault       bool // Default safe mode setting for database operations
+
+	// List of supported database drivers (default: all)
+	Drivers []string
+
+	// Query parameter name for actions (default: "action")
+	ActionParam string
+}
+
+func (c *Config) toWebConfig() *web.Config {
+	webConfig := &web.Config{
+		BasePath:              c.BasePath,
+		ActionParam:           c.ActionParam,
+		EnabledDrivers:        c.Drivers,
+		AllowAdHocConnections: c.AllowAdHocConnections,
+		SafeModeDefault:       c.SafeModeDefault,
+		SessionSecret:         c.SessionSecret,
+	}
+	return webConfig
 }
 
 // LoadConfig reads flags/env with sensible defaults.
@@ -30,6 +52,7 @@ func LoadConfig() (Config, error) {
 	cfg.SessionSecret = env.GetStringOrDefault("SESSION_SECRET", "dev-insecure-change-me")
 	cfg.AllowAdHocConnections = env.GetBoolOrDefault("ALLOW_ADHOC_CONNECTIONS", true)
 	cfg.SafeModeDefault = env.GetBoolOrDefault("SAFE_MODE_DEFAULT", true)
+	cfg.ActionParam = env.GetStringOrDefault("ACTION_PARAM", "action")
 
 	// Flags
 	port := flag.Int("port", cfg.HTTPPort, "HTTP port to listen on")

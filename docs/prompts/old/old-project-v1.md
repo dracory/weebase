@@ -1,7 +1,22 @@
+OLD OVERVIEW:
+Check docs/overview.md
+
+IGNORE EVERYTHING BELOW THIS LINE
+
 # Project Prompt: Modern Web Adminer Clone in Go (GORM-powered)
 
 ## Vision
-Build a modern, single-application, single-endpoint, web-based database admin tool—functionally equivalent to Adminer/AdminerEvo—implemented in Go, using GORM as the ORM/DB abstraction. The deliverable is a reusable Go module/package (library) that exposes an `http.Handler` and can be embedded into any Go project, plus an optional thin standalone binary for self-hosting. It supports multiple database engines and provides a clean, responsive UI for browsing schemas, editing data, running queries, and administering databases.
+Build a modern, single-application, single-endpoint, web-based database management
+admin tool—functionally equivalent to Adminer/AdminerEvo—implemented in Go.
+ using GORM as the ORM/DB abstraction. 
+ 
+The deliverable is a reusable Go module/package (library) that exposes
+an `http.Handler` and can be embedded into any Go project, plus an optional
+thin standalone binary for self-hosting.
+
+It supports multiple database engines and provides a clean, responsive UI
+for listing the databases on the server, browsing the tables, editing the data,
+running queries, and administering the databases.
 
 ## Non-Goals
 - Not a replacement for full DB admin consoles like pgAdmin or SQL Server Management Studio.
@@ -24,10 +39,9 @@ Build a modern, single-application, single-endpoint, web-based database admin to
   - PostgreSQL: gorm.io/driver/postgres
   - SQLite: gorm.io/driver/sqlite
   - SQL Server: gorm.io/driver/sqlserver
-  - Optional: ClickHouse, Oracle (if feasible), CockroachDB (via Postgres)
 - Frontend: Server-rendered templates using HB (HTML Builder) utilities with embedded CSS/JS (no external packages/CDNs; no Tailwind build step)
 - Auth: Cookie-session with secure headers + optional OIDC
-- Config: Viper or envconfig
+- Config: dracor/env
 - Logging: Go slog (log/slog) for structured JSON logs
 - Migrations: None for user DBs; internal app migrations OK
 - Packaging: Docker + docker-compose

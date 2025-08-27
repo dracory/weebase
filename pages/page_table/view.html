@@ -1,0 +1,113 @@
+<div class="table-viewer">
+  <div class="table-header">
+    <div class="breadcrumbs">
+      <a :href="basePath">Databases</a>
+      <span class="separator">/</span>
+      <span>{{ databaseName }}</span>
+      <span class="separator">/</span>
+      <span class="current">{{ tableName }}</span>
+    </div>
+    
+    <div class="table-actions">
+      <button @click="refreshTable" class="btn btn-primary" :disabled="isLoading">
+        <span v-if="!isLoading">Refresh</span>
+        <span v-else>Refreshing...</span>
+      </button>
+    </div>
+  </div>
+
+  <div v-if="error" class="alert alert-error">
+    {{ error }}
+  </div>
+
+  <div v-if="isLoading && !columns.length" class="loading">
+    <div class="spinner"></div>
+    <p>Loading table data...</p>
+  </div>
+
+  <div v-else class="table-container">
+    <div class="table-controls">
+      <div class="search-box">
+        <input 
+          type="text" 
+          v-model="searchQuery" 
+          placeholder="Search..."
+          @keyup.enter="fetchTableData"
+        >
+        <button @click="fetchTableData" class="btn-search">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="pagination-controls">
+        <span class="pagination-info">
+          {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalRows) }} of {{ totalRows }}
+        </span>
+        
+        <button 
+          @click="prevPage" 
+          :disabled="currentPage === 1 || isLoading"
+          class="btn-pagination"
+        >
+          &larr; Prev
+        </button>
+        
+        <button 
+          @click="nextPage" 
+          :disabled="currentPage * pageSize >= totalRows || isLoading"
+          class="btn-pagination"
+        >
+          Next &rarr;
+        </button>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th 
+              v-for="column in columns" 
+              :key="column.name"
+              @click="sortBy(column.name)"
+              :class="{ 'sortable': true, 'sort-asc': sortColumn === column.name && sortDirection === 'asc', 'sort-desc': sortColumn === column.name && sortDirection === 'desc' }"
+            >
+              {{ column.name }}
+              <span class="sort-icon">
+                <svg v-if="sortColumn === column.name && sortDirection === 'asc'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 15l-6-6-6 6"/>
+                </svg>
+                <svg v-else-if="sortColumn === column.name && sortDirection === 'desc'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 10l5 5 5-5"/>
+                </svg>
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(row, rowIndex) in tableData" :key="rowIndex">
+            <td v-for="column in columns" :key="column.name">
+              <template v-if="column.type === 'json'">
+                <pre>{{ formatJson(row[column.name]) }}</pre>
+              </template>
+              <template v-else-if="column.type === 'boolean'">
+                <span :class="['bool', row[column.name] ? 'true' : 'false']">
+                  {{ row[column.name] ? '✓' : '✗' }}
+                </span>
+              </template>
+              <template v-else>
+                {{ formatCellValue(row[column.name]) }}
+              </template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

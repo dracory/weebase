@@ -12,8 +12,6 @@ import (
 
 	apiConnect "github.com/dracory/weebase/api/api_connect"
 	apiDisconnect "github.com/dracory/weebase/api/api_disconnect"
-	apiProfilesList "github.com/dracory/weebase/api/api_profiles_list"
-	apiProfilesSave "github.com/dracory/weebase/api/api_profiles_save"
 	apiRowDelete "github.com/dracory/weebase/api/api_row_delete"
 	apiRowInsert "github.com/dracory/weebase/api/api_row_insert"
 	apiRowUpdate "github.com/dracory/weebase/api/api_row_update"
@@ -35,6 +33,7 @@ import (
 	"github.com/dracory/weebase/shared/session"
 	"github.com/dracory/weebase/shared/types"
 	"github.com/dracory/weebase/shared/urls"
+	"github.com/dracory/weebase/shared/web"
 	"github.com/gouniverse/hb"
 )
 
@@ -159,7 +158,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		handlers = h.pageHandlers(s, csrfToken)
 	case http.MethodPost:
-		handlers = h.apiHandlers(s, csrfToken)
+		handlers = h.apiHandlers(s)
 	default:
 		h.renderStatus(w, r, http.StatusMethodNotAllowed, "method not allowed")
 		return
@@ -197,14 +196,19 @@ func (h *Handler) pageHandlers(s *session.Session, csrfToken string) map[string]
 			_, _ = w.Write([]byte(full))
 		},
 		constants.ActionPageLogin: func(w http.ResponseWriter, r *http.Request) {
-			full, err := pageLogin.Handle(h.tmplBase, h.opts.BasePath, h.opts.ActionParam, h.drivers.List(), h.opts.AllowAdHocConnections, h.opts.SafeModeDefault, csrfToken)
-			if err != nil {
-				log.Printf("render login: %v", err)
-				h.renderStatus(w, r, http.StatusInternalServerError, "template error")
-				return
+			// Create a web config from the handler options
+			webConfig := &web.Config{
+				BasePath:              h.opts.BasePath,
+				ActionParam:          h.opts.ActionParam,
+				EnabledDrivers:       h.drivers.List(),
+				AllowAdHocConnections: h.opts.AllowAdHocConnections,
+				SafeModeDefault:       h.opts.SafeModeDefault,
+				SessionSecret:         h.opts.SessionSecret,
 			}
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			_, _ = w.Write([]byte(full))
+
+			// Create and use the login handler
+			handler := pageLogin.New(webConfig)
+			handler.ServeHTTP(w, r)
 		},
 		constants.ActionPageLogout: func(w http.ResponseWriter, r *http.Request) {
 			full, err := pageLogout.Handle(
@@ -253,15 +257,7 @@ func (h *Handler) pageHandlers(s *session.Session, csrfToken string) map[string]
 	}
 }
 
-// apiHandlers are POST-only handlers that perform API operations
-// createProfilesSaveHandler creates a new ProfilesSave handler with the correct dependencies
-func (h *Handler) createProfilesSaveHandler() http.HandlerFunc {
-	validator := driver.NewValidator(&driverRegistryWrapper{h.drivers})
-	handler := apiProfilesSave.New(h.profiles, validator)
-	return handler.Handle
-}
-
-func (h *Handler) apiHandlers(s *session.Session, csrfToken string) map[string]func(http.ResponseWriter, *http.Request) {
+func (h *Handler) apiHandlers(s *session.Session) map[string]func(http.ResponseWriter, *http.Request) {
 	// Create driver validator
 	validator := driver.NewValidator(&driverRegistryWrapper{h.drivers})
 
@@ -283,10 +279,6 @@ func (h *Handler) apiHandlers(s *session.Session, csrfToken string) map[string]f
 		constants.ActionApiDeleteRow:  apiRowDelete.New(s.Conn, h.opts.SafeModeDefault, h.opts.SessionSecret).Handle,
 		constants.ActionApiInsertRow:  apiRowInsert.New(s.Conn, h.opts.SafeModeDefault).Handle,
 		constants.ActionApiUpdateRow:  apiRowUpdate.New(s.Conn, h.opts.SafeModeDefault).Handle,
-
-		// Profiles
-		constants.ActionPageProfiles:    apiProfilesList.New(h.profiles).Handle,
-		constants.ActionApiProfilesSave: h.createProfilesSaveHandler(),
 
 		// SQL operations
 		constants.ActionPageSQLExecute: apiSQLExecute.New(s.Conn, h.opts.SafeModeDefault, h.opts.ReadOnlyMode).Handle,

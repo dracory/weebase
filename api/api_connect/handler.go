@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -16,24 +17,19 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/dracory/api"
-	"github.com/dracory/weebase/shared/driver"
 	"github.com/dracory/weebase/shared/session"
-	"github.com/dracory/weebase/shared/types"
+	"github.com/dracory/weebase/shared/web"
 )
 
-// Handler handles database connection requests
-type Handler struct {
-	sessionSecret string
-	profiles     types.ConnectionStore
-	validator    *driver.Validator
+// apiConnectController handles database connection requests
+type apiConnectController struct {
+	cfg *web.Config
 }
 
 // New creates a new connection handler
-func New(sessionSecret string, profiles types.ConnectionStore, validator *driver.Validator) *Handler {
-	return &Handler{
-		sessionSecret: sessionSecret,
-		profiles:     profiles,
-		validator:    validator,
+func New(cfg *web.Config) *apiConnectController {
+	return &apiConnectController{
+		cfg: cfg,
 	}
 }
 
@@ -57,8 +53,8 @@ type ConnectResponse struct {
 }
 
 // Handle handles the HTTP request for connecting to a database
-func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
-	s := session.EnsureSession(w, r, h.sessionSecret)
+func (h *apiConnectController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s := session.EnsureSession(w, r, h.cfg.SessionSecret)
 	if s == nil {
 		api.Respond(w, r, api.Error("failed to create or retrieve session"))
 		return
@@ -86,19 +82,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		Database:  strings.TrimSpace(r.Form.Get("database")),
 	}
 
-	// If profile_id provided, resolve it
-	if req.ProfileID != "" {
-		if p, ok := h.profiles.Get(req.ProfileID); ok {
-			req.Driver, req.DSN = p.Driver, p.DSN
-		} else {
-			api.Respond(w, r, api.Error("profile not found"))
-			return
-		}
-	}
-
 	// Validate driver
-	if err := h.validator.Validate(req.Driver); err != nil {
-		api.Respond(w, r, api.Error(err.Error()))
+	if !slices.Contains(h.cfg.EnabledDrivers, req.Driver) {
+		api.Respond(w, r, api.Error("unsupported driver"))
 		return
 	}
 

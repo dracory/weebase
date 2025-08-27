@@ -1,95 +1,176 @@
 // Login page Vue app
 (function () {
   if (!window.Vue) return; // Vue must be injected by the page handler
-  const { createApp, ref, onMounted } = window.Vue;
+  const { createApp, ref, computed, watch } = window.Vue;
 
   createApp({
     setup() {
-      const urlAction = window.urlAction;
-      const urlProfiles = window.urlProfiles;
-      const urlRedirect = window.urlRedirect;
-      const csrfToken = window.csrfToken;
+      // Configuration from server
+      const urlAction = window.urlAction || '/api/connect';
+      const urlProfiles = window.urlProfiles || '/api/profiles';
+      const urlRedirect = window.urlRedirect || '/';
+      const csrfToken = window.csrfToken || '';
 
-      console.log("urlAction", urlAction);
-      console.log("urlProfiles", urlProfiles);
-      console.log("urlRedirect", urlRedirect);
-      console.log("csrfToken", csrfToken);
-
-      const driver = ref('sqlite');
-      const server = ref('');
+      // Form state
+      const driver = ref('postgres');
+      const server = ref('localhost');
       const port = ref('');
       const username = ref('');
       const password = ref('');
-      const database = ref('database.sqlite');
+      const database = ref('');
       const remember = ref(false);
+      const isLoading = ref(false);
+      const error = ref('');
       const profiles = ref([]);
-      
-      const submit = async () => {
-        console.log("submit");
-        console.log("urlAction", urlAction);
-      console.log("urlProfiles", urlProfiles);
-      console.log("urlRedirect", urlRedirect);
-      console.log("csrfToken", csrfToken);
 
+      // Set default ports based on selected driver
+      const defaultPorts = {
+        mysql: '3306',
+        postgres: '5432',
+        sqlserver: '1433',
+        sqlite: ''
+      };
+
+      // Watch for driver changes to update port
+      watch(driver, (newDriver) => {
+        if (newDriver && defaultPorts[newDriver] && !port.value) {
+          port.value = defaultPorts[newDriver];
+        }
+        // Clear database field when switching to SQLite
+        if (newDriver === 'sqlite') {
+          database.value = '';
+        }
+      }, { immediate: true });
+
+      // Form validation
+      const isFormValid = computed(() => {
+        if (driver.value === 'sqlite') {
+          return database.value.trim() !== '';
+        }
+        return (
+          server.value.trim() !== '' &&
+          username.value.trim() !== ''
+        );
+      });
+
+      // Handle form submission
+      const submit = async () => {
+        if (!isFormValid.value) {
+          showError('Please fill in all required fields');
+          return;
+        }
+
+        isLoading.value = true;
+        error.value = '';
 
         const params = new URLSearchParams();
         params.set('driver', driver.value);
-        // Send discrete fields; server will construct DSN
-        params.set('server', server.value);
-        params.set('port', port.value);
-        params.set('username', username.value);
-        params.set('password', password.value);
-        params.set('database', database.value);
+        
+        // Only include non-SQLite fields when not using SQLite
+        if (driver.value !== 'sqlite') {
+          params.set('server', server.value.trim());
+          if (port.value) params.set('port', port.value);
+          params.set('username', username.value.trim());
+          if (password.value) params.set('password', password.value);
+          if (database.value) params.set('database', database.value.trim());
+        } else {
+          // For SQLite, only the database path is needed
+          params.set('database', database.value.trim());
+        }
+        
         if (remember.value) params.set('remember', '1');
-        params.set('csrf_token', csrfToken);
+        if (csrfToken) params.set('csrf_token', csrfToken);
 
         try {
-          const resp = await fetch(urlAction, {
+          const response = await fetch(urlAction, {
             method: 'POST',
-            body: params,
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-Requested-With': 'XMLHttpRequest',
+              ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+            },
             credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': csrfToken },
+            body: params
           });
 
-          const raw = await resp.text();
-          let data = null;
-          try { data = raw ? JSON.parse(raw) : null; } catch (_) { /* not JSON */ }
-
-          if (resp.ok && data && (data.status === 'success' || data.ok)) {
+          const data = await response.json().catch(() => ({}));
+          
+          if (response.ok && (data.status === 'success' || data.ok)) {
+            // Successful login, redirect
             window.location.href = urlRedirect;
             return;
           }
 
-          const msg = (data && (data.message || data.error || data.details)) || raw || `HTTP ${resp.status}`;
-          if (window.Swal && typeof window.Swal.fire === 'function') {
-            window.Swal.fire({ icon: 'error', title: 'Connection failed', text: String(msg).slice(0, 2000) });
-          } else {
-            alert('Connect failed: ' + msg);
-          }
+          // Handle error response
+          const errorMessage = data?.message || data?.error || 'Connection failed';
+          showError(errorMessage);
         } catch (err) {
-          const msg = err && err.message ? err.message : String(err);
-          if (window.Swal && typeof window.Swal.fire === 'function') {
-            window.Swal.fire({ icon: 'error', title: 'Network error', text: String(msg).slice(0, 2000) });
-          } else {
-            alert('Network error: ' + msg);
-          }
+          console.error('Login error:', err);
+          showError('Network error. Please check your connection and try again.');
+        } finally {
+          isLoading.value = false;
         }
       };
 
-      onMounted(async () => {
-        const root = document.getElementById('loginApp');
-        if (!root) return;
-        // Load profiles
+      // Load saved profiles if available
+      const loadProfiles = async () => {
         try {
-          const resp = await fetch(urlProfiles, { credentials: 'same-origin' });
-          const data = await resp.json().catch(() => null);
-          if (resp.ok && data && data.data && Array.isArray(data.data.profiles)) {
-            profiles.value = data.data.profiles;
+          const response = await fetch(urlProfiles, {
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.data?.profiles?.length) {
+              profiles.value = data.data.profiles;
+            }
           }
-        } catch (_) { /* ignore */ }
-      });
+        } catch (err) {
+          console.error('Failed to load profiles:', err);
+        }
+      };
 
-      return { driver, server, port, username, password, database, remember, profiles, submit };
+      // Apply profile settings
+      const applyProfile = (profile) => {
+        if (!profile) return;
+        
+        driver.value = profile.driver || 'postgres';
+        server.value = profile.server || '';
+        port.value = profile.port || defaultPorts[driver.value] || '';
+        username.value = profile.username || '';
+        database.value = profile.database || '';
+      };
+
+      // Show error message
+      const showError = (message) => {
+        error.value = message;
+        // Auto-hide error after 5 seconds
+        setTimeout(() => { error.value = ''; }, 5000);
+      };
+
+      // Initialize
+      loadProfiles();
+
+      // Expose to template
+      return {
+        driver,
+        server,
+        port,
+        username,
+        password,
+        database,
+        remember,
+        isLoading,
+        error,
+        profiles,
+        isFormValid,
+        submit,
+        applyProfile
+      };
     },
   }).mount('#loginApp');
 })();

@@ -2,9 +2,10 @@ package constants
 
 // Database driver names
 const (
-	DriverPostgres = "postgres"
-	DriverMySQL    = "mysql"
-	DriverSQLite   = "sqlite"
+	DriverPostgres  = "postgres"
+	DriverMySQL     = "mysql"
+	DriverSQLite    = "sqlite"
+	DriverSQLServer = "sqlserver"
 )
 
 // API actions

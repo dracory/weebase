@@ -1,0 +1,81 @@
+<div class="database-browser">
+  <div class="database-header">
+    <h2>Database Browser</h2>
+    <div class="database-actions">
+      <button @click="refresh" class="btn btn-primary" :disabled="isLoading">
+        <span v-if="!isLoading">Refresh</span>
+        <span v-else>Refreshing...</span>
+      </button>
+      <button @click="disconnect" class="btn btn-outline">Disconnect</button>
+    </div>
+  </div>
+
+  <div v-if="error" class="alert alert-error">
+    {{ error }}
+  </div>
+
+  <div v-if="isLoading && !databases.length" class="loading">
+    <div class="spinner"></div>
+    <p>Loading databases...</p>
+  </div>
+
+  <div v-else-if="!databases.length" class="empty-state">
+    <p>No databases found.</p>
+  </div>
+
+  <div v-else class="database-grid">
+    <div v-for="db in databases" :key="db.name" class="database-card" @click="selectDatabase(db)">
+      <div class="database-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+        </svg>
+      </div>
+      <div class="database-info">
+        <h3>{{ db.name }}</h3>
+        <div class="database-meta">
+          <span v-if="db.tables !== undefined">{{ db.tables }} tables</span>
+          <span v-if="db.size">• {{ formatSize(db.size) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table List Modal -->
+  <div v-if="selectedDatabase" class="modal" @click.self="selectedDatabase = null">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Tables in {{ selectedDatabase.name }}</h3>
+        <button @click="selectedDatabase = null" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div v-if="tablesLoading" class="loading">
+          <div class="spinner"></div>
+          <p>Loading tables...</p>
+        </div>
+        <div v-else-if="!tables.length" class="empty-state">
+          <p>No tables found in this database.</p>
+        </div>
+        <table v-else class="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Rows</th>
+              <th>Size</th>
+              <th>Last Modified</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="table in tables" :key="table.name" @click="selectTable(table)" class="clickable">
+              <td>{{ table.name }}</td>
+              <td>{{ table.rows !== undefined ? table.rows.toLocaleString() : 'N/A' }}</td>
+              <td>{{ table.size ? formatSize(table.size) : 'N/A' }}</td>
+              <td>{{ table.updatedAt ? formatDate(table.updatedAt) : 'N/A' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

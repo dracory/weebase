@@ -1,63 +1,52 @@
 package weebase
 
 import (
-	"net/http"
-
 	"github.com/dracory/weebase/shared/types"
 )
 
 // Options configures the embedded Adminer-like handler.
 type Options struct {
-    // EnabledDrivers lists enabled database drivers (e.g., postgres, mysql, sqlite, sqlserver)
-    EnabledDrivers []string
+	// EnabledDrivers lists enabled database drivers (e.g., postgres, mysql, sqlite, sqlserver)
+	EnabledDrivers []string
 
-    // SafeModeDefault turns on DDL/destructive guardrails by default
-    SafeModeDefault bool
+	// SafeModeDefault turns on DDL/destructive guardrails by default
+	SafeModeDefault bool
 
-    // AllowAdHocConnections allows runtime connection entry via UI
-    AllowAdHocConnections bool
+	// AllowAdHocConnections allows runtime connection entry via UI
+	AllowAdHocConnections bool
 
-    // ReadOnlyMode forces read-only operations regardless of DB grants
-    ReadOnlyMode bool
+	// ReadOnlyMode forces read-only operations regardless of DB grants
+	ReadOnlyMode bool
 
-    // ActionParam is the query param that selects behavior (default: "action")
-    ActionParam string
+	// ActionParam is the query param that selects behavior (default: "action")
+	ActionParam string
 
-    // BasePath is the mount path for the handler (for generating links), e.g. "/db"
-    BasePath string
+	// BasePath is the mount path for the handler (for generating links), e.g. "/db"
+	BasePath string
 
-    // SessionSecret is used for CSRF token derivation and session-level secrets.
-    SessionSecret string
+	// SessionSecret is used for CSRF token derivation and session-level secrets.
+	SessionSecret string
 
-    // DefaultConnection optionally provides a connection to auto-connect per session.
-    DefaultConnection *DefaultConnection
+	// DefaultConnection optionally provides a connection to auto-connect per session.
+	DefaultConnection *DefaultConnection
 
-    // PreconfiguredProfiles are loaded into the ConnectionStore at startup.
-    PreconfiguredProfiles []types.ConnectionProfile
+	// PreconfiguredProfiles are loaded into the ConnectionStore at startup.
+	PreconfiguredProfiles []types.ConnectionProfile
 }
 
 // withDefaults applies default values to Options.
 func (o Options) withDefaults() Options {
-    if o.ActionParam == "" {
-        o.ActionParam = "action"
-    }
-    if o.BasePath == "" {
-        o.BasePath = "/db"
-    }
-    return o
+	if o.ActionParam == "" {
+		o.ActionParam = "action"
+	}
+	if o.BasePath == "" {
+		o.BasePath = "/db"
+	}
+	return o
 }
 
 // Option is a functional option to configure Options.
 type Option func(*Options)
-
-// New constructs the http.Handler using functional options.
-func New(opts ...Option) http.Handler {
-    var o Options
-    for _, fn := range opts {
-        fn(&o)
-    }
-    return NewHandler(o)
-}
 
 // WithDrivers sets EnabledDrivers.
 func WithDrivers(drivers []string) Option { return func(o *Options) { o.EnabledDrivers = drivers } }
@@ -82,7 +71,6 @@ func WithSessionSecret(secret string) Option { return func(o *Options) { o.Sessi
 
 // DefaultConnection specifies a driver+DSN for auto-connect.
 type DefaultConnection struct {
-    Driver string
-    DSN    string
+	Driver string
+	DSN    string
 }
-
