@@ -8,27 +8,31 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/dracory/api"
+	"github.com/dracory/weebase/shared/driver"
 	"github.com/dracory/weebase/shared/session"
+	"github.com/dracory/weebase/shared/types"
 )
 
 // Handler handles row deletion operations
-type Handler struct {
-	sessionConn  *session.ActiveConnection
-	safeMode     bool
-	sessionSecret string
+type rowDeleteController struct {
+	config types.Config
+	// sessionConn   *session.ActiveConnection
+	// safeMode      bool
+	// sessionSecret string
 }
 
 // New creates a new row delete handler
-func New(sessionConn *session.ActiveConnection, safeMode bool, sessionSecret string) *Handler {
-	return &Handler{
-		sessionConn:  sessionConn,
-		safeMode:     safeMode,
-		sessionSecret: sessionSecret,
+func New(config types.Config) *rowDeleteController {
+	return &rowDeleteController{
+		config: config,
+		// sessionConn:   sessionConn,
+		// safeMode:      safeMode,
+		// sessionSecret: sessionSecret,
 	}
 }
 
 // Handle handles the HTTP request for deleting a row
-func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
+func (h *rowDeleteController) Handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		api.Respond(w, r, api.Error("delete_row must be POST"))
 		return
@@ -57,7 +61,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check safe mode confirmation
-	if h.safeMode && strings.TrimSpace(r.Form.Get("confirm")) != "yes" {
+	if h.config.SafeModeDefault && strings.TrimSpace(r.Form.Get("confirm")) != "yes" {
 		api.Respond(w, r, api.Error("confirmation required (set confirm=yes)"))
 		return
 	}
@@ -72,27 +76,32 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 }
 
 // deleteRow performs the actual row deletion with safety checks
-func (h *Handler) deleteRow(schema, table, col, val string) error {
-	if h.sessionConn == nil || h.sessionConn.DB == nil {
-		return fmt.Errorf("not connected")
+func (h *rowDeleteController) deleteRow(schema, table, col, val string) error {
+	sess := session.EnsureSession(nil, nil, h.config.SessionSecret)
+	if sess == nil || sess.Conn == nil {
+		return fmt.Errorf("not connected to database")
 	}
-	
-	// Type assert the DB connection to *gorm.DB
-	gormDB, ok := h.sessionConn.DB.(*gorm.DB)
-	if !ok {
-		return fmt.Errorf("invalid database connection type")
+
+	db, err := driver.OpenDBWithDSN(sess.Conn.Driver, sess.Conn.DSN)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %v", err)
 	}
-	
-	driver := normalizeDriver(h.sessionConn.Driver)
+	sqlDB, err := db.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get database instance: %v", err)
+	}
+	defer sqlDB.Close()
+
+	driverName := normalizeDriver(sess.Conn.Driver)
 	qtable := table
 	if schema != "" {
 		qtable = schema + "." + table
 	}
-	qtable = quoteIdent(driver, qtable)
-	qcol := quoteIdent(driver, col)
+	qtable = quoteIdent(driverName, qtable)
+	qcol := quoteIdent(driverName, col)
 
 	// Transactional safety check + delete
-	return gormDB.Transaction(func(tx *gorm.DB) error {
+	return db.Transaction(func(tx *gorm.DB) error {
 		// Safety check: ensure exactly one row matches
 		countSQL := "SELECT COUNT(*) FROM " + qtable + " WHERE " + qcol + " = ?"
 		var cnt int64
@@ -105,7 +114,7 @@ func (h *Handler) deleteRow(schema, table, col, val string) error {
 
 		// Perform delete with dialect-specific single-row hints where available
 		var delSQL string
-		switch driver {
+		switch driverName {
 		case "mysql":
 			delSQL = "DELETE FROM " + qtable + " WHERE " + qcol + " = ? LIMIT 1"
 		case "sqlserver":

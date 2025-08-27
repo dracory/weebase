@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/dracory/weebase/api/api_connect"
+	"github.com/dracory/weebase/shared/session"
 	"github.com/dracory/weebase/shared/types"
 )
 
@@ -79,6 +80,29 @@ func TestApiConnect_ServeHTTP(t *testing.T) {
 				if message, ok := response["message"].(string); !ok || message != tt.expectedError {
 					t.Errorf("unexpected error message: got %v want %v", message, tt.expectedError)
 				}
+				return
+			}
+
+			// For successful requests, verify the session cookie is set
+			cookies := rr.Result().Cookies()
+			if len(cookies) == 0 {
+				t.Fatal("no cookies set in response")
+			}
+
+			cookie := cookies[0]
+			if cookie.Name != session.SessionCookieName {
+				t.Errorf("expected cookie named %s, got %s", session.SessionCookieName, cookie.Name)
+			}
+
+			// Verify the cookie has the correct attributes
+			if !cookie.HttpOnly {
+				t.Error("session cookie should be httpOnly")
+			}
+
+			// In a real test, we would verify the session data is properly set
+			// For now, we'll just check that the cookie is set with a value
+			if cookie.Value == "" {
+				t.Error("session cookie value is empty")
 			}
 		})
 	}

@@ -7,7 +7,9 @@ import (
 
 	"github.com/dracory/weebase/shared"
 	layout "github.com/dracory/weebase/shared/layout"
+	"github.com/dracory/weebase/shared/session"
 	"github.com/dracory/weebase/shared/types"
+	"github.com/dracory/weebase/shared/urls"
 )
 
 //go:embed view.html
@@ -22,16 +24,11 @@ func New(config types.Config) *pageLogoutController {
 }
 
 func (c *pageLogoutController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	html, err := c.pageHTML()
+	// Clear the session cookie
+	session.DeleteSession(w, r)
 
-	if err != nil {
-		http.Error(w, "Failed to render logout page: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(html))
+	// Redirect to login page
+	http.Redirect(w, r, urls.Login(c.config.BasePath), http.StatusFound)
 }
 
 // Handle renders a simple logout confirmation page and returns full HTML.

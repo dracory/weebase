@@ -10,13 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
-	"gorm.io/driver/sqlserver"
-	"gorm.io/gorm"
-
 	"github.com/dracory/api"
+	"github.com/dracory/weebase/shared/driver"
 	"github.com/dracory/weebase/shared/session"
 	"github.com/dracory/weebase/shared/types"
 )
@@ -98,7 +93,7 @@ func (h *apiConnectController) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Test the connection
-	db, err := openDBWithDSN(req.Driver, req.DSN)
+	db, err := driver.OpenDBWithDSN(req.Driver, req.DSN)
 	if err != nil {
 		api.Respond(w, r, api.Error(fmt.Sprintf("connection failed: %v", err)))
 		return
@@ -112,41 +107,18 @@ func (h *apiConnectController) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	// Store the connection in the session
 	s.Conn = &session.ActiveConnection{
-		ID:       s.ID,
+		ID:       session.NewRandomID(),
 		Driver:   req.Driver,
-		DB:       db,
+		DSN:      req.DSN,
 		LastUsed: time.Now(),
 	}
 
-	// Ensure the session cookie is set in the response
-	http.SetCookie(w, &http.Cookie{
-		Name:     session.SessionCookieName,
-		Value:    s.ID,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   r.TLS != nil,
-		SameSite: http.SameSiteLaxMode,
-	})
+	// Save the updated session
+	session.SaveSession(w, r, s, h.cfg.SessionSecret)
 
 	api.Respond(w, r, api.SuccessWithData("connected", map[string]any{
 		"driver": req.Driver,
 	}))
-}
-
-// openDBWithDSN opens a database connection using the specified driver and DSN
-func openDBWithDSN(driver, dsn string) (*gorm.DB, error) {
-	switch driver {
-	case "postgres", "pg", "postgresql":
-		return gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	case "mysql", "mariadb":
-		return gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	case "sqlite", "sqlite3":
-		return gorm.Open(sqlite.Open(dsn), &gorm.Config{})
-	case "sqlserver", "mssql":
-		return gorm.Open(sqlserver.Open(dsn), &gorm.Config{})
-	default:
-		return nil, fmt.Errorf("unsupported driver: %s", driver)
-	}
 }
 
 // buildDSNFromFields constructs a DSN from discrete connection fields per driver.
