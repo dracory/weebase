@@ -8,7 +8,7 @@ import (
 )
 
 // handleConnect handles the database connection request
-func (w *Weebase) handleConnect(rw http.ResponseWriter, r *http.Request) {
+func (w *App) handleConnect(rw http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		api.Respond(rw, r, api.Error("Method not allowed"))
 		return

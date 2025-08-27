@@ -9,7 +9,7 @@ import (
 )
 
 // handleDatabasesList lists all databases on the server
-func (w *Weebase) handleDatabasesList(rw http.ResponseWriter, r *http.Request) {
+func (w *App) handleDatabasesList(rw http.ResponseWriter, r *http.Request) {
 	if w.db == nil {
 		api.Respond(rw, r, api.Error("Not connected to any database"))
 		return
@@ -27,7 +27,7 @@ func (w *Weebase) handleDatabasesList(rw http.ResponseWriter, r *http.Request) {
 }
 
 // listDatabases returns a list of all databases
-func (w *Weebase) listDatabases() ([]DatabaseInfo, error) {
+func (w *App) listDatabases() ([]DatabaseInfo, error) {
 	var databases []DatabaseInfo
 	var rows *sql.Rows
 	var err error

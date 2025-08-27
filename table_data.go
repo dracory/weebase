@@ -9,7 +9,7 @@ import (
 )
 
 // handleTableRows handles the request to get table data with pagination
-func (wb *Weebase) handleTableRows(w http.ResponseWriter, r *http.Request) {
+func (wb *App) handleTableRows(w http.ResponseWriter, r *http.Request) {
 	if wb.db == nil {
 		http.Error(w, "Not connected to any database", http.StatusBadRequest)
 		return
@@ -44,7 +44,7 @@ func (wb *Weebase) handleTableRows(w http.ResponseWriter, r *http.Request) {
 }
 
 // getTableData retrieves paginated data from a table
-func (w *Weebase) getTableData(tableName string, page, perPage int) (*TableData, error) {
+func (w *App) getTableData(tableName string, page, perPage int) (*TableData, error) {
 	var count int64
 	if err := w.db.Table(tableName).Count(&count).Error; err != nil {
 		return nil, fmt.Errorf("error counting rows: %v", err)

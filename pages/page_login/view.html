@@ -1,63 +1,64 @@
-<div class="login-container">
-  <div class="login-box">
-    <h2>Database Manager</h2>
-    
-    <div id="loginApp">
-      <div class="form-group">
-        <label>Database Type</label>
-        <select v-model="driver" class="form-control" required>
-          <option value="postgres">PostgreSQL</option>
-          <option value="mysql">MySQL</option>
-          <option value="sqlite">SQLite</option>
-          <option value="sqlserver">SQL Server</option>
-        </select>
-      </div>
-
-      <template v-if="driver !== 'sqlite'">
-        <div class="form-group">
-          <label>Server</label>
-          <input v-model="server" type="text" class="form-control" required placeholder="localhost">
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
+  <div class="card shadow-sm" style="width: 100%; max-width: 500px;">
+    <div class="card-body p-4">
+      <h2 class="card-title text-center mb-4">Database Manager</h2>
+      
+      <div id="loginApp">
+        <div class="mb-3">
+          <label class="form-label">Database Type</label>
+          <select v-model="driver" class="form-select" required>
+            <option value="postgres">PostgreSQL</option>
+            <option value="mysql">MySQL</option>
+            <option value="sqlite">SQLite</option>
+            <option value="sqlserver">SQL Server</option>
+          </select>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Port</label>
-            <input v-model="port" type="text" class="form-control" :placeholder="driver === 'mysql' ? '3306' : driver === 'postgres' ? '5432' : '1433'">
+        <template v-if="driver !== 'sqlite'">
+          <div class="mb-3">
+            <label class="form-label">Server</label>
+            <input v-model="server" type="text" class="form-control" required placeholder="localhost">
           </div>
-          <div class="form-group">
-            <label>Database</label>
-            <input v-model="database" type="text" class="form-control" placeholder="database_name">
-          </div>
-        </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Username</label>
-            <input v-model="username" type="text" class="form-control" required>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Port</label>
+              <input v-model="port" type="text" class="form-control" :placeholder="driver === 'mysql' ? '3306' : driver === 'postgres' ? '5432' : '1433'">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Database</label>
+              <input v-model="database" type="text" class="form-control" placeholder="database_name">
+            </div>
           </div>
-          <div class="form-group">
-            <label>Password</label>
-            <input v-model="password" type="password" class="form-control">
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Username</label>
+              <input v-model="username" type="text" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Password</label>
+              <input v-model="password" type="password" class="form-control">
+            </div>
           </div>
-        </div>
-      </template>
+        </template>
 
-      <template v-else>
-        <div class="form-group">
-          <label>Database File</label>
-          <input v-model="database" type="text" class="form-control" required placeholder="path/to/database.sqlite">
-        </div>
-      </template>
+        <template v-else>
+          <div class="mb-3">
+            <label class="form-label">Database File</label>
+            <input v-model="database" type="text" class="form-control" required placeholder="path/to/database.sqlite">
+          </div>
+        </template>
 
-      <div class="form-footer">
-        <div class="remember-me">
-          <input type="checkbox" v-model="remember" id="remember">
-          <label for="remember">Remember me</label>
-        </div>
-        <button @click="submit" class="btn btn-primary">
-          <span v-if="!isLoading">Connect</span>
-          <span v-else>Connecting...</span>
-        </button>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="form-check">
+            <input type="checkbox" v-model="remember" class="form-check-input" id="remember">
+            <label class="form-check-label" for="remember">Remember me</label>
+          </div>
+          <button @click="submit" class="btn btn-primary px-4">
+            <span v-if="!isLoading">Connect</span>
+            <span v-else class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          </button>
       </div>
     </div>
   </div>

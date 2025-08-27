@@ -27,16 +27,6 @@ func (d *driverRegistry) IsEnabled(name string) bool {
 	return d.enabled[name]
 }
 
-func newDriverRegistry(enabledDrivers []string) *driverRegistry {
-	dr := &driverRegistry{
-		enabled: make(map[string]bool),
-	}
-	for _, driver := range enabledDrivers {
-		dr.enabled[driver] = true
-	}
-	return dr
-}
-
 // Supported database drivers
 const (
 	MYSQL    = constants.DriverMySQL
@@ -45,8 +35,8 @@ const (
 	SQLSRV   = constants.DriverSQLServer
 )
 
-// Weebase represents the main application instance
-type Weebase struct {
+// App represents the main application instance
+type App struct {
 	config  Config
 	db      *gorm.DB
 	drivers map[string]driverConfig
@@ -57,9 +47,9 @@ type driverConfig struct {
 	Driver string
 }
 
-// New creates a new Weebase instance with the given configuration
+// New creates a new App instance with the given configuration
 // The configuration should be loaded using LoadConfig() from config.go
-func New(cfg Config, options ...func(*Config)) *Weebase {
+func New(cfg Config, options ...func(*Config)) *App {
 	// Apply any option functions to the config
 	for _, option := range options {
 		option(&cfg)
@@ -70,14 +60,14 @@ func New(cfg Config, options ...func(*Config)) *Weebase {
 		cfg.Drivers = []string{MYSQL, POSTGRES, SQLITE, SQLSRV}
 	}
 
-	return &Weebase{
+	return &App{
 		config:  cfg,
 		drivers: make(map[string]driverConfig),
 	}
 }
 
-// Handler returns an http.Handler that serves the Weebase UI and API
-func (g *Weebase) Handler() http.Handler {
+// Handler returns an http.Handler that serves the App UI and API
+func (g *App) Handler() http.Handler {
 	mux := http.NewServeMux()
 
 	// Register API handlers
@@ -87,7 +77,7 @@ func (g *Weebase) Handler() http.Handler {
 }
 
 // handleRequest routes requests to the appropriate handler
-func (g *Weebase) handleRequest(w http.ResponseWriter, r *http.Request) {
+func (g *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	action := r.URL.Query().Get(g.config.ActionParam)
 
 	switch action {
@@ -183,7 +173,7 @@ func (g *Weebase) handleRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 // middleware applies common middleware to all handlers
-func (g *Weebase) middleware(next http.Handler) http.Handler {
+func (g *App) middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Add security headers
 		w.Header().Set("X-Content-Type-Options", "nosniff")

@@ -44,9 +44,14 @@ func RenderWith(o Options) template.HTML {
 		hb.NewTag("meta").Attr("charset", "utf-8"),
 		hb.NewTag("meta").Attr("name", "viewport").Attr("content", "width=device-width, initial-scale=1"),
 		hb.NewTag("title").Text(o.Title + " · WeeBase"),
-		// Tailwind via CDN for rapid Adminer-like styling
-		hb.ScriptURL("https://cdn.tailwindcss.com"),
+		hb.Link().Rel("icon").Attr("type", "image/png").Attr("href", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="),
+		// Bootstrap 5 CSS
+		hb.Link().Rel("stylesheet").Href("https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"),
+		// Bootstrap Icons
+		hb.Link().Rel("stylesheet").Href("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"),
 		hb.StyleURL(o.BasePath + "?action=asset_css"),
+		// Bootstrap 5 JS Bundle with Popper
+		hb.ScriptURL("https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"),
 	}
 	if len(o.ExtraHead) > 0 {
 		headChildren = append(headChildren, o.ExtraHead...)

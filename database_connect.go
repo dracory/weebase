@@ -13,7 +13,7 @@ import (
 )
 
 // connectDB establishes a database connection based on the provided configuration
-func (w *Weebase) connectDB(conn DatabaseConnection) (*gorm.DB, error) {
+func (w *App) connectDB(conn DatabaseConnection) (*gorm.DB, error) {
 	switch strings.ToLower(conn.Driver) {
 	case "mysql":
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",

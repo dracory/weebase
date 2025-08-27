@@ -9,7 +9,7 @@ import (
 )
 
 // handleTablesList handles the request to list all tables in a database
-func (w *Weebase) handleTablesList(rw http.ResponseWriter, r *http.Request) {
+func (w *App) handleTablesList(rw http.ResponseWriter, r *http.Request) {
 	if w.db == nil {
 		api.Respond(rw, r, api.Error("Not connected to any database"))
 		return
@@ -27,7 +27,7 @@ func (w *Weebase) handleTablesList(rw http.ResponseWriter, r *http.Request) {
 }
 
 // listTables returns a list of all tables in the current database
-func (w *Weebase) listTables() ([]TableInfo, error) {
+func (w *App) listTables() ([]TableInfo, error) {
 	var tables []TableInfo
 	var rows *sql.Rows
 	var err error
