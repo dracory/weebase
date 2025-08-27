@@ -31,7 +31,7 @@ func Profiles(basePath string, params ...map[string]string) string {
 // Home is a convenience wrapper to construct the Home URL.
 // Signature: Home(basePath, params)
 func Home(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionHome, params...)
+	return URL(basePath, constants.ActionPageHome, params...)
 }
 
 // PageTableCreate builds the page action URL for the Create Table page.

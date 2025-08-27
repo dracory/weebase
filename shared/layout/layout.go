@@ -132,7 +132,7 @@ func RenderWith(o Options) template.HTML {
 		hb.NewTag("link").Attr("rel", "stylesheet").Attr("href", "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"),
 		// Bootstrap Icons
 		hb.NewTag("link").Attr("rel", "stylesheet").Attr("href", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"),
-		hb.NewTag("link").Attr("rel", "stylesheet").Attr("href", o.BasePath+"?action=asset_css"),
+		// hb.NewTag("link").Attr("rel", "stylesheet").Attr("href", o.BasePath+"?action=asset_css"),
 		// Bootstrap 5 JS Bundle with Popper
 		hb.NewTag("script").Attr("src", "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"),
 	}
@@ -171,7 +171,7 @@ func RenderWith(o Options) template.HTML {
 			main,
 		}),
 		footer,
-		hb.NewTag("script").Attr("src", o.BasePath+"?action=asset_js"),
+		// hb.NewTag("script").Attr("src", o.BasePath+"?action=asset_js"),
 	}
 	if len(o.ExtraBodyEnd) > 0 {
 		bodyChildren = append(bodyChildren, o.ExtraBodyEnd...)

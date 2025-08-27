@@ -80,7 +80,7 @@ func (h *Handler) GenerateHTML() (
 	// Page-specific assets
 	extraHead := []hb.TagInterface{
 		hb.Style(pageCSS),
-		hb.Meta().Attr("name", "viewport").Attr("content", DefaultViewport),
+		hb.Meta().Name("viewport").Attr("content", DefaultViewport),
 	}
 
 	// JavaScript dependencies and configuration

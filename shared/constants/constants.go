@@ -45,7 +45,7 @@ const (
 // Page actions
 const (
 	// System actions
-	ActionHome     = "home"
+	ActionPageHome = "home"
 	ActionAssetCSS = "asset_css"
 	ActionAssetJS  = "asset_js"
 
