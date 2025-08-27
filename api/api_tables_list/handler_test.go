@@ -33,7 +33,7 @@ func TestTablesList_Handle(t *testing.T) {
 		db := setupTestDB(t)
 
 		// Create a test config with a session secret
-		cfg := &types.Config{
+		cfg := types.Config{
 			SessionSecret: "test-secret",
 		}
 		handler := api_tables_list.New(cfg)
@@ -91,7 +91,7 @@ func TestTablesList_Handle(t *testing.T) {
 
 	t.Run("database not connected", func(t *testing.T) {
 		// Create a test config with a session secret
-		cfg := &types.Config{
+		cfg := types.Config{
 			SessionSecret: "test-secret",
 		}
 		handler := api_tables_list.New(cfg)

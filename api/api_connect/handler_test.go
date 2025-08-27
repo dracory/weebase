@@ -48,7 +48,7 @@ func TestApiConnect_ServeHTTP(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup test config
-			cfg := &types.Config{
+			cfg := types.Config{
 				SessionSecret: "test-secret",
 			}
 
