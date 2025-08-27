@@ -14,9 +14,9 @@ type Options struct {
 	MainHTML        string
 	// SidebarHTML, when provided, renders on the left similar to Adminer
 	// and Tailwind's "w-64" style width.
-	SidebarHTML     string
-	ExtraHead       []hb.TagInterface
-	ExtraBodyEnd    []hb.TagInterface
+	SidebarHTML  string
+	ExtraHead    []hb.TagInterface
+	ExtraBodyEnd []hb.TagInterface
 }
 
 // Render builds the full HTML page using hb and returns it as a safe HTML string.
@@ -59,12 +59,18 @@ func RenderWith(o Options) template.HTML {
 		hb.A().Href(o.BasePath + "?action=readyz").Text("Ready"),
 	})
 
-	header := hb.Header().Class("wb-header").Child(
-		hb.Div().Class("wb-container").Children([]hb.TagInterface{
-			hb.Heading1().Class("wb-title").Child(hb.A().Href(o.BasePath).Text("WeeBase")),
-			nav,
-		}),
-	)
+	header := hb.Header().
+		Class("wb-header").
+		Child(
+			hb.Div().
+				Class("wb-container").
+				Children([]hb.TagInterface{
+					hb.Heading1().
+						Class("wb-title").
+						Child(hb.A().Href(o.BasePath).Text("WeeBase")),
+					nav,
+				}),
+		)
 
 	// Shell: sidebar + main content
 	// Sidebar (optional)
@@ -98,10 +104,14 @@ func RenderWith(o Options) template.HTML {
 		bodyChildren = append(bodyChildren, o.ExtraBodyEnd...)
 	}
 
-	html := hb.NewTag("html").Attr("lang", "en").Children([]hb.TagInterface{
-		hb.NewTag("head").Children(headChildren),
-		hb.NewTag("body").Children(bodyChildren),
-	})
+	html := hb.NewTag("html").
+		Attr("lang", "en").
+		Children([]hb.TagInterface{
+			hb.NewTag("head").
+				Children(headChildren),
+			hb.NewTag("body").
+				Children(bodyChildren),
+		})
 
 	// Wrap in <!doctype html>
 	return template.HTML("<!doctype html>" + html.ToHTML())
