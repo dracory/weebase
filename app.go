@@ -95,43 +95,9 @@ func (g *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	// Page Handlers
 	case "page_home", "page_server":
-		// Get session
-		sess := session.EnsureSession(w, r, g.config.SessionSecret)
-		// Get enabled drivers
-		enabledDrivers := g.config.EnabledDrivers
-		if len(enabledDrivers) == 0 {
-			enabledDrivers = []string{"mysql", "postgres", "sqlite", "sqlserver"}
-		}
-
-		// Create connection info map
-		connInfo := make(map[string]interface{})
-		if conn := sess.Conn; conn != nil {
-			connInfo["driver"] = conn.Driver
-			// Add any additional connection info needed by the home page
-			// Note: ActiveConnection only has ID, Driver, and DB fields
-		}
-
-		// Call the handler function directly
-		html, err := page_home.Handle(
-			g.config.BasePath,
-			g.config.ActionParam,
-			enabledDrivers,
-			g.config.AllowAdHocConnections,
-			g.config.SafeModeDefault,
-			session.GenerateCSRFToken(g.config.SessionSecret),
-			connInfo,
-		)
-		if err != nil {
-			http.Error(w, "Failed to render home page: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(html))
-
+		page_home.New(g.config).ServeHTTP(w, r)
 	case "page_login":
 		page_login.New(g.config).ServeHTTP(w, r)
-
 	case "page_logout":
 		page_logout.New(g.config).ServeHTTP(w, r)
 

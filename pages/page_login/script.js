@@ -96,8 +96,18 @@
           const data = await response.json().catch(() => ({}));
           
           if (response.ok && (data.status === 'success' || data.ok)) {
-            // Successful login, redirect
-            window.location.href = urlRedirect;
+            // Add Swal success, then redirect after 5 seconds
+            Swal.fire({
+              icon: 'success',
+              title: 'Login successful',
+              text: 'Redirecting to home page...',
+              timer: 5000,
+              timerProgressBar: true,
+              showConfirmButton: false,
+            });
+            setTimeout(() => {
+              window.location.href = urlRedirect;
+            }, 5000);
             return;
           }
 
