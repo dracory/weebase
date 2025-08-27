@@ -16,25 +16,27 @@ func main() {
 		log.Fatalf("config error: %v", err)
 	}
 
+	// Update config with our settings
 	cfg.AllowAdHocConnections = true
-
-	h := weebase.NewHandler(weebase.Options{
-		EnabledDrivers: []string{
+	if len(cfg.Drivers) == 0 {
+		cfg.Drivers = []string{
 			constants.DriverPostgres,
 			constants.DriverMySQL,
 			constants.DriverSQLite,
-		},
-		SafeModeDefault:       cfg.SafeModeDefault,
-		AllowAdHocConnections: cfg.AllowAdHocConnections,
-		BasePath:              cfg.BasePath,
-		SessionSecret:         cfg.SessionSecret,
-	})
+		}
+	}
+
+	// Create a new Weebase instance with the config
+	app := weebase.New(cfg)
+
+	// Get the HTTP handler
+	h := app.Handler()
 
 	addr := fmt.Sprintf(":%d", cfg.HTTPPort)
 	log.Printf("WeeBase listening on %s (mount %s)", addr, cfg.BasePath)
 
 	mux := http.NewServeMux()
-	weebase.Register(mux, cfg.BasePath, h)
+	mux.Handle(cfg.BasePath, h)
 
 	// Wrap with request logging middleware
 	handler := weebase.RequestLogger(mux)

@@ -9,8 +9,6 @@ import (
 	gormsqlserver "gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-
-	"github.com/dracory/weebase/shared/driver"
 )
 
 // OpenGORM opens a GORM DB for the given driver and DSN.
@@ -32,12 +30,6 @@ func OpenGORM(driver, dsn string) (*gorm.DB, error) {
 	default:
 		return nil, fmt.Errorf("unsupported driver: %s", driver)
 	}
-}
-
-// ValidateDriver checks if a driver is valid and enabled
-func (h *Handler) ValidateDriver(name string) error {
-	validator := driver.NewValidator(&driverRegistryWrapper{h.drivers})
-	return validator.Validate(name)
 }
 
 // driverRegistryWrapper wraps DriverRegistry to implement the driver.Registry interface
