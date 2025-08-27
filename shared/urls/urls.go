@@ -25,7 +25,7 @@ func Connect(basePath string, params ...map[string]string) string {
 // Profiles is a convenience wrapper to construct the profiles endpoint URL.
 // Signature: Profiles(basePath, params)
 func Profiles(basePath string, params ...map[string]string) string {
-	return URL(basePath, "profiles", params...)
+	return URL(basePath, constants.ActionApiProfilesList, params...)
 }
 
 // Home is a convenience wrapper to construct the Home URL.

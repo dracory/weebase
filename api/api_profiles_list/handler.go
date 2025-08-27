@@ -3,6 +3,7 @@ package api_profiles_list
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/dracory/api"
@@ -36,23 +37,18 @@ func New(config types.Config) *Handler {
 
 // ServeHTTP handles the HTTP request
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s := session.EnsureSession(w, r, h.config.SessionSecret)
-	if s == nil {
-		api.Respond(w, r, api.Error("failed to create or retrieve session"))
+	sess := session.EnsureSession(w, r, h.config.SessionSecret)
+	if sess == nil {
+		api.Respond(w, r, api.Error("failed to get session"))
 		return
 	}
 
-	switch r.Method {
-	case http.MethodGet:
-		h.handleGetProfiles(w, r, s)
-	default:
+	if r.Method != http.MethodGet {
 		api.Respond(w, r, api.Error("method not allowed"))
+		return
 	}
-}
 
-// handleGetProfiles handles GET /api/profiles
-func (h *Handler) handleGetProfiles(w http.ResponseWriter, r *http.Request, s *session.Session) {
-	profiles, err := h.getProfilesFromCookie(r)
+	profiles, err := h.GetProfilesFromCookie(r)
 	if err != nil {
 		api.Respond(w, r, api.Error("failed to get profiles: "+err.Error()))
 		return
@@ -63,8 +59,9 @@ func (h *Handler) handleGetProfiles(w http.ResponseWriter, r *http.Request, s *s
 	}))
 }
 
-// getProfilesFromCookie retrieves profiles from the cookie
-func (h *Handler) getProfilesFromCookie(r *http.Request) ([]Profile, error) {
+// GetProfilesFromCookie retrieves profiles from the cookie
+// This method is exported for testing purposes
+func (h *Handler) GetProfilesFromCookie(r *http.Request) ([]Profile, error) {
 	cookie, err := r.Cookie(constants.CookieProfiles)
 	if err != nil {
 		if err == http.ErrNoCookie {
@@ -73,16 +70,23 @@ func (h *Handler) getProfilesFromCookie(r *http.Request) ([]Profile, error) {
 		return nil, err
 	}
 
+	// URL decode the cookie value first
+	decodedValue, err := url.QueryUnescape(cookie.Value)
+	if err != nil {
+		return nil, err
+	}
+
 	var profiles []Profile
-	if err := json.Unmarshal([]byte(cookie.Value), &profiles); err != nil {
+	if err := json.Unmarshal([]byte(decodedValue), &profiles); err != nil {
 		return nil, err
 	}
 
 	return profiles, nil
 }
 
-// setProfilesCookie sets the profiles cookie
-func (h *Handler) setProfilesCookie(w http.ResponseWriter, profiles []Profile) error {
+// SetProfilesCookie sets the profiles cookie
+// This method is exported for testing purposes
+func (h *Handler) SetProfilesCookie(w http.ResponseWriter, profiles []Profile) error {
 	profilesJSON, err := json.Marshal(profiles)
 	if err != nil {
 		return err
@@ -93,9 +97,12 @@ func (h *Handler) setProfilesCookie(w http.ResponseWriter, profiles []Profile) e
 		secure = true
 	}
 
+	// URL encode the JSON string before setting it as a cookie value
+	encodedValue := url.QueryEscape(string(profilesJSON))
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     constants.CookieProfiles,
-		Value:    string(profilesJSON),
+		Value:    encodedValue,
 		Path:     "/",
 		MaxAge:   30 * 24 * 60 * 60, // 30 days
 		HttpOnly: true,

@@ -112,10 +112,21 @@ func (h *apiConnectController) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	// Store the connection in the session
 	s.Conn = &session.ActiveConnection{
+		ID:       s.ID,
 		Driver:   req.Driver,
 		DB:       db,
 		LastUsed: time.Now(),
 	}
+
+	// Ensure the session cookie is set in the response
+	http.SetCookie(w, &http.Cookie{
+		Name:     session.SessionCookieName,
+		Value:    s.ID,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   r.TLS != nil,
+		SameSite: http.SameSiteLaxMode,
+	})
 
 	api.Respond(w, r, api.SuccessWithData("connected", map[string]any{
 		"driver": req.Driver,

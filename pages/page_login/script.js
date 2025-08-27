@@ -6,13 +6,13 @@
   createApp({
     setup() {
       // Configuration from server
-      const urlAction = window.urlAction || '/api/connect';
-      const urlProfiles = window.urlProfiles || '/api/profiles';
-      const urlRedirect = window.urlRedirect || '/';
+      const urlAction = window.urlAction || '';
+      const urlProfiles = window.urlProfiles || '';
+      const urlRedirect = window.urlRedirect || '';
       const csrfToken = window.csrfToken || '';
 
       // Form state
-      const driver = ref('postgres');
+      const driver = ref('sqlite');
       const server = ref('localhost');
       const port = ref('');
       const username = ref('');
@@ -138,7 +138,7 @@
       const applyProfile = (profile) => {
         if (!profile) return;
         
-        driver.value = profile.driver || 'postgres';
+        driver.value = profile.driver || 'sqlite';
         server.value = profile.server || '';
         port.value = profile.port || defaultPorts[driver.value] || '';
         username.value = profile.username || '';

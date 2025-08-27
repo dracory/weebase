@@ -57,8 +57,10 @@ func (h *Handler) GenerateHTML() (
 	}
 
 	// Build action URL for form submission
-	actionUrl := urls.Connect(basePath, nil)
-	profilesUrl := urls.Profiles(basePath, nil)
+	actionUrl := urls.Connect(basePath)
+	profilesUrl := urls.Profiles(basePath)
+	homeUrl := urls.Home(basePath)
+
 	csrfToken := ""
 
 	// Get embedded assets
@@ -91,20 +93,10 @@ func (h *Handler) GenerateHTML() (
 		hb.ScriptURL(cdn.Sweetalert2_11()),
 		// Configuration for the frontend
 		hb.Script(`
-			window.appConfig = {
-				urls: {
-					action: "` + template.JSEscapeString(actionUrl) + `",
-					profiles: "` + template.JSEscapeString(profilesUrl) + `",
-					redirect: "` + template.JSEscapeString(basePath) + `"
-				},
-				csrfToken: "` + template.JSEscapeString(csrfToken) + `",
-				safeMode: ` + template.JSEscapeString(func() string {
-			if h.config.SafeModeDefault {
-				return "true"
-			}
-			return "false"
-		}()) + `
-			};
+			window.urlAction = "` + template.JSEscapeString(actionUrl) + `";
+			window.urlProfiles = "` + template.JSEscapeString(profilesUrl) + `";
+			window.urlRedirect = "` + template.JSEscapeString(homeUrl) + `";
+			window.csrfToken = "` + template.JSEscapeString(csrfToken) + `";
 		`),
 		hb.Script(pageJS), // Our main application script
 	}
