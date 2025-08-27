@@ -11,11 +11,11 @@ import (
 
 // TablesList handles table listing operations
 type TablesList struct {
-	cfg *types.Config
+	cfg types.Config
 }
 
 // New creates a new TablesList handler
-func New(cfg *types.Config) *TablesList {
+func New(cfg types.Config) *TablesList {
 	return &TablesList{cfg: cfg}
 }
 

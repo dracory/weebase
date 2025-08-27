@@ -5,10 +5,17 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	"github.com/dracory/weebase/shared/session"
 )
 
 // handleConnect handles the database connection request
 func (w *App) handleConnect(rw http.ResponseWriter, r *http.Request) {
+	// Ensure session exists
+	sess := session.EnsureSession(rw, r, w.config.SessionSecret)
+	if sess == nil {
+		api.Respond(rw, r, api.Error("failed to create or retrieve session"))
+		return
+	}
 	if r.Method != http.MethodPost {
 		api.Respond(rw, r, api.Error("Method not allowed"))
 		return

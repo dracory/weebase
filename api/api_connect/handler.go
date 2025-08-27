@@ -23,11 +23,11 @@ import (
 
 // apiConnectController handles database connection requests
 type apiConnectController struct {
-	cfg *types.Config
+	cfg types.Config
 }
 
 // New creates a new connection handler
-func New(cfg *types.Config) *apiConnectController {
+func New(cfg types.Config) *apiConnectController {
 	return &apiConnectController{
 		cfg: cfg,
 	}

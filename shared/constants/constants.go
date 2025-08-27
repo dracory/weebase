@@ -8,6 +8,11 @@ const (
 	DriverSQLServer = "sqlserver"
 )
 
+// Cookie names
+const (
+	CookieProfiles = "weebase_profiles"
+)
+
 // API actions
 const (
 	// Connection management
@@ -22,6 +27,7 @@ const (
 	ActionApiDeleteRow  = "api_delete_row"
 
 	// Profile management
+	ActionApiProfilesList = "api_profiles_list"
 	ActionApiProfilesSave = "api_profiles_save"
 
 	// Schema and table operations

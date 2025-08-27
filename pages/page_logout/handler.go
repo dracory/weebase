@@ -14,10 +14,10 @@ import (
 var embeddedFS embed.FS
 
 type pageLogoutController struct {
-	config *types.Config
+	config types.Config
 }
 
-func New(config *types.Config) *pageLogoutController {
+func New(config types.Config) *pageLogoutController {
 	return &pageLogoutController{config: config}
 }
 

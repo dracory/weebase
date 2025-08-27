@@ -2,6 +2,8 @@ package types
 
 // Config contains the configuration for web handlers
 type Config struct {
+	// HTTPPort is the port to listen on for HTTP requests
+	HTTPPort int
 	// BasePath is the base URL path for the application
 	BasePath string
 	// ActionParam is the query parameter used for actions
@@ -14,4 +16,6 @@ type Config struct {
 	SafeModeDefault bool
 	// SessionSecret is the secret used for session management
 	SessionSecret string
+	// SecureCookies specifies if cookies should be set with the Secure flag
+	SecureCookies bool
 }

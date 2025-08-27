@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/weebase/api/api_connect"
+	"github.com/dracory/weebase/api/api_profiles_list"
 	"github.com/dracory/weebase/api/api_tables_list"
 	"github.com/dracory/weebase/pages/page_database"
 	"github.com/dracory/weebase/pages/page_home"
@@ -15,6 +16,7 @@ import (
 	page_table "github.com/dracory/weebase/pages/page_table"
 	"github.com/dracory/weebase/shared/constants"
 	"github.com/dracory/weebase/shared/session"
+	"github.com/dracory/weebase/shared/types"
 	"gorm.io/gorm"
 )
 
@@ -37,7 +39,7 @@ const (
 
 // App represents the main application instance
 type App struct {
-	config  Config
+	config  types.Config
 	db      *gorm.DB
 	drivers map[string]driverConfig
 }
@@ -49,15 +51,15 @@ type driverConfig struct {
 
 // New creates a new App instance with the given configuration
 // The configuration should be loaded using LoadConfig() from config.go
-func New(cfg Config, options ...func(*Config)) *App {
+func New(cfg types.Config, options ...func(*types.Config)) *App {
 	// Apply any option functions to the config
 	for _, option := range options {
 		option(&cfg)
 	}
 
 	// Initialize default drivers if none provided
-	if len(cfg.Drivers) == 0 {
-		cfg.Drivers = []string{MYSQL, POSTGRES, SQLITE, SQLSRV}
+	if len(cfg.EnabledDrivers) == 0 {
+		cfg.EnabledDrivers = []string{MYSQL, POSTGRES, SQLITE, SQLSRV}
 	}
 
 	return &App{
@@ -82,18 +84,21 @@ func (g *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	switch action {
 	// API Handlers
-	case "api_connect":
-		api_connect.New(g.config.toWebConfig()).ServeHTTP(w, r)
-
+	case constants.ActionApiConnect:
+		api_connect.New(g.config).ServeHTTP(w, r)
+		return
+	case constants.ActionApiProfilesList:
+		api_profiles_list.New(g.config).ServeHTTP(w, r)
+		return
 	case "api_tables_list":
-		api_tables_list.New(g.config.toWebConfig()).Handle(w, r)
+		api_tables_list.New(g.config).Handle(w, r)
 
 	// Page Handlers
 	case "page_home", "page_server":
 		// Get session
 		sess := session.EnsureSession(w, r, g.config.SessionSecret)
 		// Get enabled drivers
-		enabledDrivers := g.config.Drivers
+		enabledDrivers := g.config.EnabledDrivers
 		if len(enabledDrivers) == 0 {
 			enabledDrivers = []string{"mysql", "postgres", "sqlite", "sqlserver"}
 		}
@@ -125,10 +130,10 @@ func (g *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(html))
 
 	case "page_login":
-		page_login.New(g.config.toWebConfig()).ServeHTTP(w, r)
+		page_login.New(g.config).ServeHTTP(w, r)
 
 	case "page_logout":
-		page_logout.New(g.config.toWebConfig()).ServeHTTP(w, r)
+		page_logout.New(g.config).ServeHTTP(w, r)
 
 	case "page_database":
 		// Get session
@@ -150,7 +155,7 @@ func (g *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(html))
 
 	case "page_table":
-		page_table.New(g.config.toWebConfig()).ServeHTTP(w, r)
+		page_table.New(g.config).ServeHTTP(w, r)
 
 	// Default to login page
 	default:

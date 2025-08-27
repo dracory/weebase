@@ -18,8 +18,8 @@ func main() {
 
 	// Update config with our settings
 	cfg.AllowAdHocConnections = true
-	if len(cfg.Drivers) == 0 {
-		cfg.Drivers = []string{
+	if len(cfg.EnabledDrivers) == 0 {
+		cfg.EnabledDrivers = []string{
 			constants.DriverPostgres,
 			constants.DriverMySQL,
 			constants.DriverSQLite,

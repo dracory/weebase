@@ -26,11 +26,11 @@ var embeddedFS embed.FS
 
 // pageTableController handles HTTP requests for the table page
 type pageTableController struct {
-	config *types.Config
+	config types.Config
 }
 
 // New creates a new pageTableController instance
-func New(config *types.Config) *pageTableController {
+func New(config types.Config) *pageTableController {
 	return &pageTableController{
 		config: config,
 	}

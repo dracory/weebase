@@ -8,40 +8,40 @@ import (
 	"github.com/dracory/weebase/shared/types"
 )
 
-// Config holds all configuration for the Weebase instance
-type Config struct {
-	// Server settings
-	HTTPPort      int    // Port to listen on (default: 8080)
-	BasePath      string // Base URL path (default: "/")
-	SessionSecret string // Secret for session encryption
+// // Config holds all configuration for the Weebase instance
+// type Config struct {
+// 	// Server settings
+// 	HTTPPort      int    // Port to listen on (default: 8080)
+// 	BasePath      string // Base URL path (default: "/")
+// 	SessionSecret string // Secret for session encryption
 
-	// Security settings
-	AllowAdHocConnections bool // Whether to allow ad-hoc database connections
-	SafeModeDefault       bool // Default safe mode setting for database operations
+// 	// Security settings
+// 	AllowAdHocConnections bool // Whether to allow ad-hoc database connections
+// 	SafeModeDefault       bool // Default safe mode setting for database operations
 
-	// List of supported database drivers (default: all)
-	Drivers []string
+// 	// List of supported database drivers (default: all)
+// 	Drivers []string
 
-	// Query parameter name for actions (default: "action")
-	ActionParam string
-}
+// 	// Query parameter name for actions (default: "action")
+// 	ActionParam string
+// }
 
-func (c *Config) toWebConfig() *types.Config {
-	webConfig := &types.Config{
-		BasePath:              c.BasePath,
-		ActionParam:           c.ActionParam,
-		EnabledDrivers:        c.Drivers,
-		AllowAdHocConnections: c.AllowAdHocConnections,
-		SafeModeDefault:       c.SafeModeDefault,
-		SessionSecret:         c.SessionSecret,
-	}
-	return webConfig
-}
+// func (c *Config) toWebConfig() *types.Config {
+// 	webConfig := &types.Config{
+// 		BasePath:              c.BasePath,
+// 		ActionParam:           c.ActionParam,
+// 		EnabledDrivers:        c.Drivers,
+// 		AllowAdHocConnections: c.AllowAdHocConnections,
+// 		SafeModeDefault:       c.SafeModeDefault,
+// 		SessionSecret:         c.SessionSecret,
+// 	}
+// 	return webConfig
+// }
 
 // LoadConfig reads flags/env with sensible defaults.
 // Flags take precedence over env.
-func LoadConfig() (Config, error) {
-	var cfg Config
+func LoadConfig() (types.Config, error) {
+	var cfg types.Config
 
 	// Optionally load from .env files (missing files are ignored inside the lib)
 	env.Load(".env")
