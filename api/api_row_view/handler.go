@@ -1,79 +1,82 @@
 package api_row_view
 
 import (
+	"database/sql"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/dracory/api"
 	"github.com/dracory/weebase/shared/session"
-	"gorm.io/gorm"
+	"github.com/dracory/weebase/shared/types"
 )
 
 // RowView handles viewing a single row from a table
 type RowView struct {
-	conn *session.ActiveConnection
+	config types.Config
 }
 
 // New creates a new RowView handler
-func New(conn *session.ActiveConnection) *RowView {
-	return &RowView{conn: conn}
+func New(config types.Config) *RowView {
+	return &RowView{config: config}
 }
 
 // Handle processes the request
 func (h *RowView) Handle(w http.ResponseWriter, r *http.Request) {
-	if h.conn == nil || h.conn.DB == nil {
+	if r.Method != http.MethodGet {
+		api.Respond(w, r, api.Error("view_row must be GET"))
+		return
+	}
+
+	sess := session.EnsureSession(nil, nil, h.config.SessionSecret)
+	if sess == nil || sess.Conn == nil {
 		api.Respond(w, r, api.Error("not connected to database"))
 		return
 	}
 
-	_ = r.ParseForm()
-	schema := strings.TrimSpace(r.Form.Get("schema"))
-	table := strings.TrimSpace(r.Form.Get("table"))
-	col := strings.TrimSpace(r.Form.Get("key_column"))
-	val := strings.TrimSpace(r.Form.Get("key_value"))
+	if err := r.ParseForm(); err != nil {
+		api.Respond(w, r, api.Error("failed to parse form"))
+		return
+	}
 
-	if table == "" || col == "" || val == "" {
+	table := strings.TrimSpace(r.Form.Get("table"))
+	schema := strings.TrimSpace(r.Form.Get("schema"))
+	keyColumn := strings.TrimSpace(r.Form.Get("key_column"))
+	keyValue := strings.TrimSpace(r.Form.Get("key_value"))
+
+	// Validate required parameters
+	if table == "" || keyColumn == "" || keyValue == "" {
 		api.Respond(w, r, api.Error("table, key_column and key_value are required"))
 		return
 	}
 
-	// Validate identifiers to prevent injection in identifier positions
-	if !sanitizeIdent(table) || (schema != "" && !sanitizeIdent(schema)) || !sanitizeIdent(col) {
-		api.Respond(w, r, api.Error("invalid identifier"))
+	// Validate identifiers
+	if !sanitizeIdent(table) || (schema != "" && !sanitizeIdent(schema)) || !sanitizeIdent(keyColumn) {
+		api.Respond(w, r, api.Error("invalid table, schema or key column identifier"))
 		return
 	}
 
-	// Get the database connection
-	db, ok := h.conn.DB.(*gorm.DB)
-	if !ok {
-		api.Respond(w, r, api.Error("invalid database connection type"))
+	// Open database connection
+	db, err := sql.Open(sess.Conn.Driver, sess.Conn.DSN)
+	if err != nil {
+		api.Respond(w, r, api.Error(fmt.Sprintf("failed to connect to database: %v", err)))
 		return
 	}
+	defer db.Close()
 
 	// Build query
 	qtable := table
 	if schema != "" {
 		qtable = schema + "." + table
 	}
-	qtable = quoteIdent(h.conn.Driver, qtable)
-	qcol := quoteIdent(h.conn.Driver, col)
-
-	var sqlStr string
-	var args []any
-
-	switch normalizeDriver(h.conn.Driver) {
-	case "sqlserver":
-		sqlStr = "SELECT TOP (1) * FROM " + qtable + " WHERE " + qcol + " = ?"
-		args = []any{val}
-	default:
-		sqlStr = "SELECT * FROM " + qtable + " WHERE " + qcol + " = ? LIMIT 1"
-		args = []any{val}
-	}
+	qtable = quoteIdent(sess.Conn.Driver, qtable)
+	qcol := quoteIdent(sess.Conn.Driver, keyColumn)
 
 	// Execute query
-	rows, err := db.Raw(sqlStr, args...).Rows()
+	query := "SELECT * FROM " + qtable + " WHERE " + qcol + " = ?"
+	rows, err := db.Query(query, keyValue)
 	if err != nil {
-		api.Respond(w, r, api.Error(err.Error()))
+		api.Respond(w, r, api.Error(fmt.Sprintf("query failed: %v", err)))
 		return
 	}
 	defer rows.Close()
@@ -81,7 +84,7 @@ func (h *RowView) Handle(w http.ResponseWriter, r *http.Request) {
 	// Get column names
 	cols, err := rows.Columns()
 	if err != nil {
-		api.Respond(w, r, api.Error(err.Error()))
+		api.Respond(w, r, api.Error(fmt.Sprintf("failed to get columns: %v", err)))
 		return
 	}
 
@@ -99,7 +102,7 @@ func (h *RowView) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rows.Scan(ptrs...); err != nil {
-		api.Respond(w, r, api.Error(err.Error()))
+		api.Respond(w, r, api.Error(fmt.Sprintf("failed to scan row: %v", err)))
 		return
 	}
 
@@ -112,9 +115,8 @@ func (h *RowView) Handle(w http.ResponseWriter, r *http.Request) {
 	api.Respond(w, r, api.SuccessWithData("row", map[string]any{"row": out}))
 }
 
-// Helper functions from the original handler
+// sanitizeIdent checks if an identifier contains only safe characters
 func sanitizeIdent(s string) bool {
-	// Simple check for now - should be extended with proper validation
 	return s != "" && !strings.ContainsAny(s, " ;'\"`")
 }
 

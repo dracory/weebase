@@ -6,20 +6,21 @@ import (
 	"strings"
 
 	"github.com/dracory/api"
+	"github.com/dracory/weebase/shared/driver"
 	"github.com/dracory/weebase/shared/session"
+	"github.com/dracory/weebase/shared/types"
 	"gorm.io/gorm"
 )
 
 // RowUpdate handles row update requests
 type RowUpdate struct {
-	conn           *session.ActiveConnection
+	config         types.Config
 	safeModeDefault bool
 }
-
 // New creates a new RowUpdate handler
-func New(conn *session.ActiveConnection, safeModeDefault bool) *RowUpdate {
+func New(config types.Config, safeModeDefault bool) *RowUpdate {
 	return &RowUpdate{
-		conn:           conn,
+		config:         config,
 		safeModeDefault: safeModeDefault,
 	}
 }
@@ -31,7 +32,8 @@ func (h *RowUpdate) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.conn == nil || h.conn.DB == nil {
+	sess := session.EnsureSession(nil, nil, h.config.SessionSecret)
+	if sess == nil || sess.Conn == nil {
 		api.Respond(w, r, api.Error("not connected to database"))
 		return
 	}
@@ -47,16 +49,16 @@ func (h *RowUpdate) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	schema := strings.TrimSpace(r.Form.Get("schema"))
 	table := strings.TrimSpace(r.Form.Get("table"))
-	keyCol := strings.TrimSpace(r.Form.Get("key_column"))
-	keyVal := strings.TrimSpace(r.Form.Get("key_value"))
+	schema := strings.TrimSpace(r.Form.Get("schema"))
+	keyColumn := strings.TrimSpace(r.Form.Get("key_column"))
+	keyValue := strings.TrimSpace(r.Form.Get("key_value"))
 	setColsCSV := strings.TrimSpace(r.Form.Get("set_cols"))
 	setValsCSV := strings.TrimSpace(r.Form.Get("set_vals"))
 
 	// Validate required parameters
-	if table == "" || keyCol == "" || keyVal == "" || setColsCSV == "" || setValsCSV == "" {
-		api.Respond(w, r, api.Error("table, key_column, key_value, set_cols, set_vals are required"))
+	if table == "" || keyColumn == "" || keyValue == "" || setColsCSV == "" || setValsCSV == "" {
+		api.Respond(w, r, api.Error("table, key_column, key_value, set_cols, and set_vals are required"))
 		return
 	}
 
@@ -69,39 +71,45 @@ func (h *RowUpdate) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate identifiers
-	if !sanitizeIdent(table) || (schema != "" && !sanitizeIdent(schema)) || !sanitizeIdent(keyCol) {
-		api.Respond(w, r, api.Error("invalid table or key column identifier"))
+	if !sanitizeIdent(table) || (schema != "" && !sanitizeIdent(schema)) || !sanitizeIdent(keyColumn) {
+		api.Respond(w, r, api.Error("invalid table, schema or key column identifier"))
 		return
 	}
 
-	for _, c := range setCols {
-		if !sanitizeIdent(c) {
-			api.Respond(w, r, api.Error("invalid column name in set_cols"))
+	for _, col := range setCols {
+		if !sanitizeIdent(col) {
+			api.Respond(w, r, api.Error("invalid column name: "+col))
 			return
 		}
 	}
 
-	// Get the gorm DB instance
-	db, ok := h.conn.DB.(*gorm.DB)
-	if !ok {
-		api.Respond(w, r, api.Error("invalid database connection type"))
+	// Get database connection
+	db, err := driver.OpenDBWithDSN(sess.Conn.Driver, sess.Conn.DSN)
+	if err != nil {
+		api.Respond(w, r, api.Error(fmt.Sprintf("failed to connect to database: %v", err)))
 		return
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		api.Respond(w, r, api.Error(fmt.Sprintf("failed to get database instance: %v", err)))
+		return
+	}
+	defer sqlDB.Close()
 
-	// Prepare table and column names with proper quoting
+	driverName := normalizeDriver(sess.Conn.Driver)
 	qtable := table
 	if schema != "" {
 		qtable = schema + "." + table
 	}
-	qtable = quoteIdent(h.conn.Driver, qtable)
-	qkey := quoteIdent(h.conn.Driver, keyCol)
+	qtable = quoteIdent(driverName, qtable)
+	qkey := quoteIdent(driverName, keyColumn)
 
 	// Execute the update in a transaction
-	err := db.Transaction(func(tx *gorm.DB) error {
+	err = db.Transaction(func(tx *gorm.DB) error {
 		// Safety check: ensure exactly one row will be updated
 		countSQL := "SELECT COUNT(*) FROM " + qtable + " WHERE " + qkey + " = ?"
 		var cnt int64
-		if err := tx.Raw(countSQL, keyVal).Scan(&cnt).Error; err != nil {
+		if err := tx.Raw(countSQL, keyValue).Scan(&cnt).Error; err != nil {
 			return fmt.Errorf("safety check failed: %w", err)
 		}
 
@@ -114,10 +122,10 @@ func (h *RowUpdate) Handle(w http.ResponseWriter, r *http.Request) {
 		args := make([]any, 0, len(setCols)+1)
 
 		for i, c := range setCols {
-			sets[i] = quoteIdent(h.conn.Driver, c) + " = ?"
+			sets[i] = quoteIdent(driverName, c) + " = ?"
 			args = append(args, setVals[i])
 		}
-		args = append(args, keyVal)
+		args = append(args, keyValue)
 
 		// Build and execute the UPDATE query
 		sqlStr := "UPDATE " + qtable + " SET " + strings.Join(sets, ", ") + " WHERE " + qkey + " = ?"

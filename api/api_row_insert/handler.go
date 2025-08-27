@@ -1,24 +1,27 @@
 package api_row_insert
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/dracory/api"
+	"github.com/dracory/weebase/shared/driver"
 	"github.com/dracory/weebase/shared/session"
+	"github.com/dracory/weebase/shared/types"
 	"gorm.io/gorm"
 )
 
 // RowInsert handles row insertion requests
 type RowInsert struct {
-	conn           *session.ActiveConnection
+	config         types.Config
 	safeModeDefault bool
 }
 
 // New creates a new RowInsert handler
-func New(conn *session.ActiveConnection, safeModeDefault bool) *RowInsert {
+func New(config types.Config, safeModeDefault bool) *RowInsert {
 	return &RowInsert{
-		conn:           conn,
+		config:         config,
 		safeModeDefault: safeModeDefault,
 	}
 }
@@ -30,7 +33,8 @@ func (h *RowInsert) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.conn == nil || h.conn.DB == nil {
+	sess := session.EnsureSession(nil, nil, h.config.SessionSecret)
+	if sess == nil || sess.Conn == nil {
 		api.Respond(w, r, api.Error("not connected to database"))
 		return
 	}
@@ -46,72 +50,70 @@ func (h *RowInsert) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	schema := strings.TrimSpace(r.Form.Get("schema"))
 	table := strings.TrimSpace(r.Form.Get("table"))
-	colsCSV := strings.TrimSpace(r.Form.Get("cols"))
-	valsCSV := strings.TrimSpace(r.Form.Get("vals"))
+	schema := strings.TrimSpace(r.Form.Get("schema"))
+	columns := splitCSV(r.Form.Get("columns"))
+	values := splitCSV(r.Form.Get("values"))
 
-	// Validate required parameters
-	if table == "" || colsCSV == "" || valsCSV == "" {
-		api.Respond(w, r, api.Error("table, cols, and vals are required"))
+	if table == "" || len(columns) == 0 || len(values) == 0 {
+		api.Respond(w, r, api.Error("table, columns and values are required"))
 		return
 	}
 
-	// Parse CSV values
-	cols := splitCSV(colsCSV)
-	vals := splitCSV(valsCSV)
-
-	if len(cols) == 0 || len(cols) != len(vals) {
-		api.Respond(w, r, api.Error("number of cols must equal number of vals"))
+	if len(columns) != len(values) {
+		api.Respond(w, r, api.Error("number of columns and values must match"))
 		return
 	}
 
 	// Validate identifiers
+	for _, col := range columns {
+		if !sanitizeIdent(col) {
+			api.Respond(w, r, api.Error("invalid column identifier: "+col))
+			return
+		}
+	}
+
 	if !sanitizeIdent(table) || (schema != "" && !sanitizeIdent(schema)) {
 		api.Respond(w, r, api.Error("invalid table or schema identifier"))
 		return
 	}
 
-	for _, c := range cols {
-		if !sanitizeIdent(c) {
-			api.Respond(w, r, api.Error("invalid column name"))
-			return
-		}
-	}
-
-	// Get the gorm DB instance
-	db, ok := h.conn.DB.(*gorm.DB)
-	if !ok {
-		api.Respond(w, r, api.Error("invalid database connection type"))
+	// Get database connection
+	db, err := driver.OpenDBWithDSN(sess.Conn.Driver, sess.Conn.DSN)
+	if err != nil {
+		api.Respond(w, r, api.Error(fmt.Sprintf("failed to connect to database: %v", err)))
 		return
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		api.Respond(w, r, api.Error(fmt.Sprintf("failed to get database instance: %v", err)))
+		return
+	}
+	defer sqlDB.Close()
 
-	// Prepare table and column names with proper quoting
+	driverName := normalizeDriver(sess.Conn.Driver)
 	qtable := table
 	if schema != "" {
 		qtable = schema + "." + table
 	}
-	qtable = quoteIdent(h.conn.Driver, qtable)
+	qtable = quoteIdent(driverName, qtable)
 
-	// Prepare the SQL query
-	qcols := make([]string, len(cols))
-	ph := make([]string, len(cols))
-	args := make([]any, len(vals))
+	// Prepare columns and values
+	qcols := make([]string, len(columns))
+	ph := make([]string, len(columns))
+	args := make([]any, len(values))
 
-	for i := range cols {
-		qcols[i] = quoteIdent(h.conn.Driver, cols[i])
+	for i, col := range columns {
+		qcols[i] = quoteIdent(driverName, col)
 		ph[i] = "?"
-		args[i] = vals[i]
+		args[i] = values[i]
 	}
 
 	sqlStr := "INSERT INTO " + qtable + " (" + strings.Join(qcols, ", ") + ") VALUES (" + strings.Join(ph, ", ") + ")"
 
 	// Execute the insert in a transaction
-	err := db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec(sqlStr, args...).Error; err != nil {
-			return err
-		}
-		return nil
+	err = db.Transaction(func(tx *gorm.DB) error {
+		return tx.Exec(sqlStr, args...).Error
 	})
 
 	if err != nil {
