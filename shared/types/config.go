@@ -1,4 +1,4 @@
-package web
+package types
 
 // Config contains the configuration for web handlers
 type Config struct {

@@ -9,7 +9,7 @@ import (
 	"github.com/dracory/weebase/shared"
 	layout "github.com/dracory/weebase/shared/layout"
 	"github.com/dracory/weebase/shared/session"
-	"github.com/dracory/weebase/shared/web"
+	"github.com/dracory/weebase/shared/types"
 	"github.com/gouniverse/cdn"
 	hb "github.com/gouniverse/hb"
 )
@@ -26,11 +26,11 @@ var embeddedFS embed.FS
 
 // pageTableController handles HTTP requests for the table page
 type pageTableController struct {
-	config *web.Config
+	config *types.Config
 }
 
 // New creates a new pageTableController instance
-func New(config *web.Config) *pageTableController {
+func New(config *types.Config) *pageTableController {
 	return &pageTableController{
 		config: config,
 	}

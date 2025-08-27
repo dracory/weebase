@@ -18,16 +18,16 @@ import (
 
 	"github.com/dracory/api"
 	"github.com/dracory/weebase/shared/session"
-	"github.com/dracory/weebase/shared/web"
+	"github.com/dracory/weebase/shared/types"
 )
 
 // apiConnectController handles database connection requests
 type apiConnectController struct {
-	cfg *web.Config
+	cfg *types.Config
 }
 
 // New creates a new connection handler
-func New(cfg *web.Config) *apiConnectController {
+func New(cfg *types.Config) *apiConnectController {
 	return &apiConnectController{
 		cfg: cfg,
 	}
@@ -72,14 +72,13 @@ func (h *apiConnectController) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	// Get connection parameters
 	req := ConnectRequest{
-		ProfileID: strings.TrimSpace(r.Form.Get("profile_id")),
-		Driver:    strings.TrimSpace(r.Form.Get("driver")),
-		DSN:       strings.TrimSpace(r.Form.Get("dsn")),
-		Server:    strings.TrimSpace(r.Form.Get("server")),
-		Port:      strings.TrimSpace(r.Form.Get("port")),
-		Username:  strings.TrimSpace(r.Form.Get("username")),
-		Password:  strings.TrimSpace(r.Form.Get("password")),
-		Database:  strings.TrimSpace(r.Form.Get("database")),
+		Driver:   strings.TrimSpace(r.Form.Get("driver")),
+		DSN:      strings.TrimSpace(r.Form.Get("dsn")),
+		Server:   strings.TrimSpace(r.Form.Get("server")),
+		Port:     strings.TrimSpace(r.Form.Get("port")),
+		Username: strings.TrimSpace(r.Form.Get("username")),
+		Password: strings.TrimSpace(r.Form.Get("password")),
+		Database: strings.TrimSpace(r.Form.Get("database")),
 	}
 
 	// Validate driver

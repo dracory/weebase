@@ -5,29 +5,31 @@ import (
 
 	"github.com/dracory/api"
 	"github.com/dracory/weebase/shared/session"
+	"github.com/dracory/weebase/shared/types"
 	"gorm.io/gorm"
 )
 
 // TablesList handles table listing operations
 type TablesList struct {
-	conn *session.ActiveConnection
+	cfg *types.Config
 }
 
 // New creates a new TablesList handler
-func New(conn *session.ActiveConnection) *TablesList {
-	return &TablesList{conn: conn}
+func New(cfg *types.Config) *TablesList {
+	return &TablesList{cfg: cfg}
 }
 
 // Handle processes the request
 func (h *TablesList) Handle(w http.ResponseWriter, r *http.Request) {
-	if h.conn == nil || h.conn.DB == nil {
+	conn := session.EnsureSession(w, r, h.cfg.SessionSecret)
+	if conn == nil || conn.Conn == nil || conn.Conn.DB == nil {
 		w.WriteHeader(http.StatusBadRequest)
 		api.Respond(w, r, api.Error("not connected to database"))
 		return
 	}
 
 	// Get the database connection
-	db, ok := h.conn.DB.(*gorm.DB)
+	db, ok := conn.Conn.DB.(*gorm.DB)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		api.Respond(w, r, api.Error("invalid database connection type"))

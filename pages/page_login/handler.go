@@ -7,8 +7,8 @@ import (
 
 	"github.com/dracory/weebase/shared"
 	"github.com/dracory/weebase/shared/layout"
+	"github.com/dracory/weebase/shared/types"
 	"github.com/dracory/weebase/shared/urls"
-	"github.com/dracory/weebase/shared/web"
 	"github.com/gouniverse/cdn"
 	hb "github.com/gouniverse/hb"
 )
@@ -25,10 +25,10 @@ var embeddedFS embed.FS
 
 // Handler handles login page requests
 type Handler struct {
-	config *web.Config
+	config *types.Config
 }
 
-func New(config *web.Config) *Handler {
+func New(config *types.Config) *Handler {
 	return &Handler{
 		config: config,
 	}

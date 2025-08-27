@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/dracory/env"
-	"github.com/dracory/weebase/shared/web"
+	"github.com/dracory/weebase/shared/types"
 )
 
 // Config holds all configuration for the Weebase instance
@@ -26,8 +26,8 @@ type Config struct {
 	ActionParam string
 }
 
-func (c *Config) toWebConfig() *web.Config {
-	webConfig := &web.Config{
+func (c *Config) toWebConfig() *types.Config {
+	webConfig := &types.Config{
 		BasePath:              c.BasePath,
 		ActionParam:           c.ActionParam,
 		EnabledDrivers:        c.Drivers,

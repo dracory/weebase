@@ -1,9 +1,5 @@
 package weebase
 
-import (
-	"github.com/dracory/weebase/shared/types"
-)
-
 // Options configures the embedded Adminer-like handler.
 type Options struct {
 	// EnabledDrivers lists enabled database drivers (e.g., postgres, mysql, sqlite, sqlserver)
@@ -31,7 +27,7 @@ type Options struct {
 	DefaultConnection *DefaultConnection
 
 	// PreconfiguredProfiles are loaded into the ConnectionStore at startup.
-	PreconfiguredProfiles []types.ConnectionProfile
+	// PreconfiguredProfiles []types.ConnectionProfile
 }
 
 // withDefaults applies default values to Options.
