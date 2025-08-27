@@ -25,10 +25,10 @@ var embeddedFS embed.FS
 
 // Handler handles login page requests
 type Handler struct {
-	config *types.Config
+	config types.Config
 }
 
-func New(config *types.Config) *Handler {
+func New(config types.Config) *Handler {
 	return &Handler{
 		config: config,
 	}
