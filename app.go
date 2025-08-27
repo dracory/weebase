@@ -128,21 +128,7 @@ func (g *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 		page_login.New(g.config.toWebConfig()).ServeHTTP(w, r)
 
 	case "page_logout":
-		// Call the logout handler function directly
-		html, err := page_logout.Handle(
-			nil, // No template
-			g.config.BasePath,
-			g.config.ActionParam,
-			g.config.SafeModeDefault,
-			"", // No CSRF token needed for logout
-		)
-		if err != nil {
-			http.Error(w, "Failed to render logout page: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(html))
+		page_logout.New(g.config.toWebConfig()).ServeHTTP(w, r)
 
 	case "page_database":
 		// Get session

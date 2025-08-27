@@ -1,41 +1,156 @@
-<div id="tableCreateApp" class="p-4">
-  <h2 class="text-xl font-semibold mb-3">Create table</h2>
-  <form id="tableCreateForm" class="space-y-4" @submit.prevent="onSubmit">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <div>
-        <label class="block text-sm font-medium mb-1">Schema (optional)</label>
-        <input name="schema" v-model="schema" class="w-full border px-2 py-1 rounded" placeholder="public | dbname | dbo" />
-      </div>
-      <div class="md:col-span-2">
-        <label class="block text-sm font-medium mb-1">Table name</label>
-        <input name="table" v-model="table" required class="w-full border px-2 py-1 rounded" />
-      </div>
-    </div>
-
-    <div>
-      <p class="text-sm font-semibold mb-2">Columns</p>
-      <div id="cols">
-        <div class="grid grid-cols-12 gap-2 items-end mb-2 col-row" v-for="(c, idx) in columns" :key="idx">
-          <input class="col-span-3 border px-2 py-1 rounded" name="col_name[]" v-model="c.name" placeholder="name" required />
-          <input class="col-span-3 border px-2 py-1 rounded" name="col_type[]" v-model="c.type" placeholder="varchar,int,text" />
-          <input class="col-span-2 border px-2 py-1 rounded" name="col_length[]" v-model="c.length" placeholder="len" />
-          <label class="col-span-1 inline-flex items-center gap-1 text-sm">
-            <input type="checkbox" name="col_nullable[]" :value="idx+1" v-model="c.nullable" /> NULL
-          </label>
-          <label class="col-span-1 inline-flex items-center gap-1 text-sm">
-            <input type="checkbox" name="col_pk[]" :value="idx+1" v-model="c.pk" /> PK
-          </label>
-          <label class="col-span-1 inline-flex items-center gap-1 text-sm">
-            <input type="checkbox" name="col_ai[]" :value="idx+1" v-model="c.ai" /> AI
-          </label>
-          <button type="button" class="text-xs px-2 py-1 border rounded ml-2" @click="removeColumn(idx)">Remove</button>
+<div id="tableCreateApp" class="container py-4">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h2 class="h4 mb-4">Create New Table</h2>
+      
+      <form id="tableCreateForm" @submit.prevent="onSubmit">
+        <!-- Schema and Table Name -->
+        <div class="row mb-4">
+          <div class="col-md-4 mb-3 mb-md-0">
+            <label class="form-label">Schema (optional)</label>
+            <input 
+              name="schema" 
+              v-model="schema" 
+              class="form-control" 
+              placeholder="public | dbname | dbo"
+            >
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Table Name <span class="text-danger">*</span></label>
+            <input 
+              name="table" 
+              v-model="table" 
+              class="form-control" 
+              required
+              placeholder="Enter table name"
+            >
+          </div>
         </div>
-      </div>
-      <button id="addCol" type="button" class="mt-2 px-2 py-1 border rounded text-sm" @click="addColumn">Add column</button>
-    </div>
 
-    <div class="pt-2">
-      <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded">Create table</button>
+        <!-- Columns Section -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Columns</h5>
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline-primary" 
+              @click="addColumn"
+            >
+              <i class="bi bi-plus-lg me-1"></i> Add Column
+            </button>
+          </div>
+          
+          <div id="cols" class="mb-3">
+            <!-- Column Rows -->
+            <div 
+              v-for="(c, idx) in columns" 
+              :key="idx" 
+              class="row g-2 align-items-end mb-3"
+            >
+              <div class="col-md-3">
+                <label class="form-label small mb-1">Name</label>
+                <input 
+                  name="col_name[]" 
+                  v-model="c.name" 
+                  class="form-control form-control-sm" 
+                  placeholder="column_name" 
+                  required
+                >
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small mb-1">Type</label>
+                <input 
+                  name="col_type[]" 
+                  v-model="c.type" 
+                  class="form-control form-control-sm" 
+                  placeholder="varchar, int, etc." 
+                  required
+                >
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small mb-1">Length</label>
+                <input 
+                  name="col_length[]" 
+                  v-model="c.length" 
+                  class="form-control form-control-sm" 
+                  placeholder="255"
+                >
+              </div>
+              <div class="col-md-2">
+                <div class="form-check">
+                  <input 
+                    type="checkbox" 
+                    name="col_nullable[]" 
+                    :value="idx+1" 
+                    v-model="c.nullable" 
+                    class="form-check-input"
+                    :id="'nullable-'+idx"
+                  >
+                  <label class="form-check-label small" :for="'nullable-'+idx">
+                    NULL
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input 
+                    type="checkbox" 
+                    name="col_pk[]" 
+                    :value="idx+1" 
+                    v-model="c.pk" 
+                    class="form-check-input"
+                    :id="'pk-'+idx"
+                  >
+                  <label class="form-check-label small" :for="'pk-'+idx">
+                    Primary Key
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-1">
+                <div class="form-check">
+                  <input 
+                    type="checkbox" 
+                    name="col_ai[]" 
+                    :value="idx+1" 
+                    v-model="c.ai" 
+                    class="form-check-input"
+                    :id="'ai-'+idx"
+                  >
+                  <label class="form-check-label small" :for="'ai-'+idx">
+                    Auto Inc
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-1 text-end">
+                <button 
+                  type="button" 
+                  class="btn btn-sm btn-outline-danger" 
+                  @click="removeColumn(idx)"
+                  title="Remove column"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary"
+            @click="$router.go(-1)"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="btn btn-primary"
+            :disabled="!table || columns.length === 0"
+          >
+            <i class="bi bi-save me-1"></i> Create Table
+          </button>
+        </div>
+      </form>
     </div>
-  </form>
+  </div>
 </div>

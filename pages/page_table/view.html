@@ -121,10 +121,62 @@
                 {{ formatCellValue(row[column.name]) }}
               </template>
             </td>
-            <td style="width: 120px;">Actions</td>
+            <td class="text-nowrap">
+              <div class="btn-group btn-group-sm" role="group">
+                <button 
+                  @click="editRow(row)" 
+                  class="btn btn-outline-primary" 
+                  title="Edit"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button 
+                  @click="deleteRow(row)" 
+                  class="btn btn-outline-danger" 
+                  title="Delete"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr v-if="rows.length === 0">
+            <td :colspan="columns.length + 1" class="text-center py-4 text-muted">
+              No records found
+            </td>
           </tr>
         </tbody>
       </table>
+    </div>
+    
+    <!-- Bottom Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <div class="text-muted small">
+        Showing {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalRows) }} of {{ totalRows }} records
+      </div>
+      
+      <nav aria-label="Table navigation">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" :class="{'disabled': currentPage === 1}">
+            <button 
+              class="page-link" 
+              @click="prevPage" 
+              :disabled="currentPage === 1 || isLoading"
+            >
+              Previous
+            </button>
+          </li>
+          <li class="page-item" :class="{'disabled': currentPage * pageSize >= totalRows}">
+            <button 
+              class="page-link" 
+              @click="nextPage" 
+              :disabled="currentPage * pageSize >= totalRows || isLoading"
+            >
+              Next
+            </button>
+          </li>
+        </ul>
+      </nav>
     </div>
   </div>
 </div>
