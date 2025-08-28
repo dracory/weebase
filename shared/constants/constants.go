@@ -55,20 +55,13 @@ const (
 	ActionAssetJS  = "asset_js"
 
 	// Pages
-
-	ActionPageHome = "page_home"
-
-	// Authentication
-	ActionPageLogin  = "page_login"
-	ActionPageLogout = "page_logout"
-
-	// Profile management
-	ActionPageProfiles = "page_profiles"
-
-	// Data operations
-	ActionPageSQLExecute = "page_sql_execute"
-
-	// Table operations
+	ActionPageHome        = "page_home"
+	ActionPageExport      = "page_export"
+	ActionPageImport      = "page_import"
+	ActionPageLogin       = "page_login"
+	ActionPageLogout      = "page_logout"
+	ActionPageProfiles    = "page_profiles"
+	ActionPageSQLExecute  = "page_sql_execute"
 	ActionPageTableCreate = "page_table_create"
 	ActionPageTableEdit   = "page_table_edit"
 	ActionPageTableView   = "page_table_view"

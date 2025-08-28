@@ -148,12 +148,13 @@ func RenderWith(o Options) template.HTML {
 	// Sidebar (optional)
 	var sidebar hb.TagInterface
 	if o.SidebarHTML != "" {
-		sidebar = hb.NewTag("aside").Class("wb-sidebar shrink-0 border-r border-gray-200 bg-gray-50 dark:bg-slate-900 dark:border-slate-800 p-3 w-60").
-			Child(hb.Raw(o.SidebarHTML))
+		sidebar = hb.NewTag("aside").Class("col-md-3 col-lg-2 d-md-block bg-light sidebar collapse p-0").
+			Child(hb.NewTag("div").Class("position-sticky pt-3").
+				Child(hb.Raw(o.SidebarHTML)))
 	}
 
 	// Main content wraps the provided HTML
-	main := hb.NewTag("main").Class("container py-3").Child(hb.Raw(o.MainHTML))
+	main := hb.NewTag("main").Class("col-md-9 ms-sm-auto col-lg-10 px-md-4").Child(hb.Raw(o.MainHTML))
 
 	// Footer
 	footer := hb.NewTag("footer").Class("container-fluid py-3 mt-5 border-top").
@@ -166,10 +167,11 @@ func RenderWith(o Options) template.HTML {
 	// Body base
 	bodyChildren := []hb.TagInterface{
 		header,
-		hb.NewTag("div").Class("wb-shell flex min-h-[60vh]").Children([]hb.TagInterface{
-			sidebar,
-			main,
-		}),
+		hb.NewTag("div").Class("container-fluid").
+			Child(hb.NewTag("div").Class("row").Children([]hb.TagInterface{
+				sidebar,
+				main,
+			})),
 		footer,
 		// hb.NewTag("script").Attr("src", o.BasePath+"?action=asset_js"),
 	}

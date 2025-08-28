@@ -1,22 +1,40 @@
-<div id="app" class="p-6">
-  <h2 class="text-2xl font-bold mb-4">Welcome</h2>
-  <p class="mb-6">This is the WeeBase admin UI. Use the sidebar to navigate.</p>
-  
-  <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-    <h3 class="text-lg font-semibold mb-4">Quick Start</h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <a href="#" @click.prevent="navigateToSql" class="block p-4 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-        <h4 class="font-medium">SQL Command</h4>
-        <p class="text-sm text-slate-600 dark:text-slate-400">Execute SQL queries</p>
-      </a>
-      <a href="#" @click.prevent="navigateToCreateTable" class="block p-4 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-        <h4 class="font-medium">Create Table</h4>
-        <p class="text-sm text-slate-600 dark:text-slate-400">Create a new database table</p>
-      </a>
-      <a href="#" @click.prevent="navigateToImport" class="block p-4 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-        <h4 class="font-medium">Import Data</h4>
-        <p class="text-sm text-slate-600 dark:text-slate-400">Import data from files</p>
-      </a>
+<div id="app" class="container-fluid p-4">
+  <div class="row">
+    <div class="col-12">
+      <h2 class="display-5 mb-4">Welcome</h2>
+      <p class="lead mb-4">This is the WeeBase admin UI. Use the sidebar to navigate.</p>
+      
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h3 class="h4 mb-4">Quick Start</h3>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <a href="#" @click.prevent="navigateToSql" class="card h-100 text-decoration-none">
+                <div class="card-body">
+                  <h4 class="h5 card-title">SQL Command</h4>
+                  <p class="card-text text-muted small">Execute SQL queries</p>
+                </div>
+              </a>
+            </div>
+            <div class="col-md-4 mb-3">
+              <a href="#" @click.prevent="navigateToCreateTable" class="card h-100 text-decoration-none">
+                <div class="card-body">
+                  <h4 class="h5 card-title">Create Table</h4>
+                  <p class="card-text text-muted small">Create a new database table</p>
+                </div>
+              </a>
+            </div>
+            <div class="col-md-4 mb-3">
+              <a href="#" @click.prevent="navigateToImport" class="card h-100 text-decoration-none">
+                <div class="card-body">
+                  <h4 class="h5 card-title">Import Data</h4>
+                  <p class="card-text text-muted small">Import data from files</p>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

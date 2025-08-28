@@ -74,6 +74,21 @@ func SQLExecute(basePath string, params ...map[string]string) string {
 	return URL(basePath, constants.ActionPageSQLExecute, params...)
 }
 
+// PageSQLExecute builds the URL for the SQL execute page
+func PageSQLExecute(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionPageSQLExecute, params...)
+}
+
+// PageImport builds the URL for the import page
+func PageImport(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionPageImport, params...)
+}
+
+// PageExport builds the URL for the export page
+func PageExport(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionPageExport, params...)
+}
+
 // Build constructs a URL like: basePath?actionParam=action&k=v...
 // - basePath: mount path, e.g. "/db"
 // - actionParam: query key that selects behavior, e.g. "action"

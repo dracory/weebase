@@ -21,14 +21,22 @@
         if (!el) return;
         el.innerHTML = '';
         if (this.loading){ el.innerHTML = '<li>loading...</li>'; return; }
-        if (this.error){ el.innerHTML = '<li class="text-red-600">'+this.error.replace(/</g,'&lt;')+'</li>'; return; }
+        if (this.error) { 
+          el.innerHTML = '<li class="text-red-600">' + 
+            this.error.toString()
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;') + 
+            '</li>'; 
+          return; 
+        }
         var base = window.urlTableView || window.urlBrowseRows || '';
         if (this.tables.length === 0){ el.innerHTML = '<li>No tables</li>'; return; }
         this.tables.forEach(function(t){
           var li = document.createElement('li');
           var a = document.createElement('a');
           a.textContent = 'select ' + t;
-          a.href = base + (base.indexOf('?')>-1?'&':'?') + 'table=' + encodeURIComponent(t);
+          a.href = base + (base.indexOf('?') > -1 ? '&' : '?') + 'table=' + encodeURIComponent(t);
           a.className = 'hover:underline';
           li.appendChild(a);
           el.appendChild(li);
@@ -74,7 +82,10 @@
             if (filter && t.toLowerCase().indexOf(filter.toLowerCase()) === -1) return;
             var tr = document.createElement('tr');
             var tdName = document.createElement('td'); tdName.className='px-2 py-1 border';
-            var a = document.createElement('a'); a.className='text-blue-700 hover:underline'; a.textContent=t; a.href=base+(base.indexOf('?')>-1?'&':'?')+'table='+encodeURIComponent(t);
+            var a = document.createElement('a'); 
+            a.className = 'text-blue-700 hover:underline'; 
+            a.textContent = t; 
+            a.href = base + (base.indexOf('?') > -1 ? '&' : '?') + 'table=' + encodeURIComponent(t);
             tdName.appendChild(a);
             var tdRows = document.createElement('td'); tdRows.className='px-2 py-1 border'; tdRows.textContent='—';
             var tdAct = document.createElement('td'); tdAct.className='px-2 py-1 border text-center';
