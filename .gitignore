@@ -1,4 +1,6 @@
 *.exe
 cmd/server/tmp/*
 tmp/*
-database.sqlite
+
+*.db
+*.sqlite
