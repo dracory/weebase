@@ -1,23 +1,78 @@
 package api_sql_explain
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/dracory/api"
 	"github.com/dracory/weebase/shared/session"
-	"gorm.io/gorm"
+	"github.com/dracory/weebase/shared/types"
 )
 
 // SQLExplain handles SQL EXPLAIN operations
+// SQLExplain handles SQL EXPLAIN operations
+// It provides execution plans for SQL queries to help with query optimization
 type SQLExplain struct {
-	conn *session.ActiveConnection
+	config types.Config
 }
 
 // New creates a new SQLExplain handler
-func New(conn *session.ActiveConnection) *SQLExplain {
-	return &SQLExplain{conn: conn}
+func New(config types.Config) *SQLExplain {
+	return &SQLExplain{config: config}
+}
+
+// getExplainQuery returns the appropriate EXPLAIN query for the given SQL and driver
+func getExplainQuery(sqlText, driver string) string {
+	switch driver {
+	case "postgres":
+		return "EXPLAIN (FORMAT JSON) " + sqlText
+	case "mysql":
+		return "EXPLAIN FORMAT=JSON " + sqlText
+	case "sqlite":
+		return "EXPLAIN QUERY PLAN " + sqlText
+	case "sqlserver":
+		return "SET SHOWPLAN_XML ON;\n" + sqlText + "\nSET SHOWPLAN_XML OFF;"
+	default:
+		return "EXPLAIN " + sqlText
+	}
+}
+
+// scanRow scans a single row into a map of column names to values
+func scanRow(rows *sql.Rows) (map[string]any, error) {
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, fmt.Errorf("error getting columns: %v", err)
+	}
+
+	// Create a slice of interface{} to hold the column values
+	values := make([]interface{}, len(columns))
+	valuePtrs := make([]interface{}, len(columns))
+	for i := range values {
+		valuePtrs[i] = &values[i]
+	}
+
+	// Scan the row into the value pointers
+	if err := rows.Scan(valuePtrs...); err != nil {
+		return nil, fmt.Errorf("error scanning row: %v", err)
+	}
+
+	// Convert row to map
+	row := make(map[string]any, len(columns))
+	for i, col := range columns {
+		val := values[i]
+		switch v := val.(type) {
+		case []byte:
+			row[col] = string(v)
+		case nil:
+			row[col] = nil
+		default:
+			row[col] = v
+		}
+	}
+
+	return row, nil
 }
 
 // Handle processes the request
@@ -27,7 +82,8 @@ func (h *SQLExplain) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.conn == nil || h.conn.DB == nil {
+	sess := session.EnsureSession(nil, nil, h.config.SessionSecret)
+	if sess == nil || sess.Conn == nil {
 		api.Respond(w, r, api.Error("not connected to database"))
 		return
 	}
@@ -43,64 +99,35 @@ func (h *SQLExplain) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the gorm DB instance
-	db, ok := h.conn.DB.(*gorm.DB)
-	if !ok {
-		api.Respond(w, r, api.Error("invalid database connection type"))
+	// Open database connection
+	db, err := sql.Open(sess.Conn.Driver, sess.Conn.DSN)
+	if err != nil {
+		api.Respond(w, r, api.Error(fmt.Sprintf("failed to connect to database: %v", err)))
 		return
 	}
+	defer db.Close()
 
-	// Generate the appropriate EXPLAIN statement based on the database driver
-	var explainSQL string
-	switch normalizeDriver(h.conn.Driver) {
-	case "postgres", "mysql", "sqlserver":
-		explainSQL = "EXPLAIN " + sqlText
-	case "sqlite":
-		explainSQL = "EXPLAIN QUERY PLAN " + sqlText
-	default:
-		explainSQL = "EXPLAIN " + sqlText
-	}
+	// Get the database driver name
+	driver := normalizeDriver(sess.Conn.Driver)
+
+	// Prepare the EXPLAIN query based on the database driver
+	explainSQL := getExplainQuery(sqlText, driver)
 
 	// Execute the EXPLAIN query
-	rows, err := db.Raw(explainSQL).Rows()
+	rows, err := db.Query(explainSQL)
 	if err != nil {
-		api.Respond(w, r, api.Error(fmt.Sprintf("explain error: %v", err)))
+		api.Respond(w, r, api.Error(fmt.Sprintf("error executing explain: %v", err)))
 		return
 	}
 	defer rows.Close()
 
-	// Get column names
-	columns, err := rows.Columns()
-	if err != nil {
-		api.Respond(w, r, api.Error(fmt.Sprintf("error getting columns: %v", err)))
-		return
-	}
-
-	// Read all rows
+	// Process results
 	var results []map[string]any
 	for rows.Next() {
-		// Create a slice of interface{} to hold the column values
-		values := make([]any, len(columns))
-		valuePtrs := make([]any, len(columns))
-		for i := range values {
-			valuePtrs[i] = &values[i]
-		}
-
-		// Scan the row into the values
-		if err := rows.Scan(valuePtrs...); err != nil {
-			api.Respond(w, r, api.Error(fmt.Sprintf("error scanning row: %v", err)))
+		row, err := scanRow(rows)
+		if err != nil {
+			api.Respond(w, r, api.Error(err.Error()))
 			return
-		}
-
-		// Convert row to map
-		row := make(map[string]any, len(columns))
-		for i, col := range columns {
-			val := values[i]
-			if b, ok := val.([]byte); ok {
-				row[col] = string(b)
-			} else {
-				row[col] = val
-			}
 		}
 		results = append(results, row)
 	}
@@ -111,7 +138,9 @@ func (h *SQLExplain) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.Respond(w, r, api.SuccessWithData("explain", map[string]any{
-		"plan": results,
+		"plan":    results,
+		"driver":  driver,
+		"message": "Query plan generated successfully",
 	}))
 }
 
