@@ -74,9 +74,9 @@ func (h *Handler) GenerateHTML(csrfToken string) (template.HTML, error) {
 	}
 
 	// Build action URL for form submission
-	actionUrl := urls.Connect(basePath)
-	profilesUrl := urls.Profiles(basePath)
-	homeUrl := urls.Home(basePath)
+	actionUrl := urls.ApiConnect(basePath)
+	profilesListUrl := urls.ApiProfilesList(basePath)
+	homeUrl := urls.PageHome(basePath)
 
 	// Get embedded assets
 	pageCSS, err := css()
@@ -109,7 +109,7 @@ func (h *Handler) GenerateHTML(csrfToken string) (template.HTML, error) {
 		// Configuration for the frontend
 		hb.Script(`
 			window.urlAction = "` + template.JSEscapeString(actionUrl) + `";
-			window.urlProfiles = "` + template.JSEscapeString(profilesUrl) + `";
+			window.urlProfilesList = "` + template.JSEscapeString(profilesListUrl) + `";
 			window.urlRedirect = "` + template.JSEscapeString(homeUrl) + `";
 			window.csrfToken = "` + template.JSEscapeString(csrfToken) + `";
 		`),

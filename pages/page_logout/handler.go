@@ -28,7 +28,7 @@ func (c *pageLogoutController) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	session.DeleteSession(w, r)
 
 	// Redirect to login page
-	http.Redirect(w, r, urls.Login(c.config.BasePath), http.StatusFound)
+	http.Redirect(w, r, urls.PageLogin(c.config.BasePath), http.StatusFound)
 }
 
 // Handle renders a simple logout confirmation page and returns full HTML.

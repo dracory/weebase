@@ -30,22 +30,19 @@ const (
 	ActionApiProfilesList = "api_profiles_list"
 	ActionApiProfilesSave = "api_profiles_save"
 
-	// Schema and table operations
-	ActionApiListSchemas = "api_list_schemas"
-	ActionApiListTables  = "api_list_tables"
+	// Schema operations
+	ActionApiSchemasList = "api_schemas_list"
+
+	// Table operations
+	ActionApiTablesList = "api_tables_list"
 
 	// SQL operations
 	ActionApiSQLExecute = "api_sql_execute"
 	ActionApiSQLExplain = "api_sql_explain"
-	ActionApiListSaved  = "api_list_saved_queries"
-	ActionApiSaveQuery  = "api_save_query"
 
 	// Table operations
-	ActionApiTableInfo      = "api_table_info"
-	ActionApiViewDefinition = "api_view_definition"
-	ActionApiTableCreate    = "api_table_create"
-	ActionApiTableDrop      = "api_table_drop"
-	ActionApiTableEdit      = "api_table_edit"
+	ActionApiTableCreate = "api_table_create"
+	ActionApiTableList   = "api_table_list"
 )
 
 // Page actions
@@ -62,7 +59,8 @@ const (
 	ActionPageLogout      = "page_logout"
 	ActionPageProfiles    = "page_profiles"
 	ActionPageSQLExecute  = "page_sql_execute"
+	ActionPageServer      = "page_server"
+	ActionPageDatabase    = "page_database"
+	ActionPageTable       = "page_table"
 	ActionPageTableCreate = "page_table_create"
-	ActionPageTableEdit   = "page_table_edit"
-	ActionPageTableView   = "page_table_view"
 )

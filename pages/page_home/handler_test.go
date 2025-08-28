@@ -138,7 +138,7 @@ func TestServeHTTP_WithoutActiveConnection(t *testing.T) {
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusFound, resp.StatusCode)
-	loginURL := urls.Login("/test")
+	loginURL := urls.PageLogin("/test")
 	assert.Equal(t, loginURL, resp.Header.Get("Location"))
 
 	// Clean up

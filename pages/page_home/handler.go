@@ -39,7 +39,7 @@ func (h *pageHomeController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Check if we have an active connection in the session
 	if sess.Conn == nil || sess.Conn.Driver == "" {
-		urlLogin := urls.Login(h.cfg.BasePath)
+		urlLogin := urls.PageLogin(h.cfg.BasePath)
 		// No active connection, redirect to login
 		http.Redirect(w, r, urlLogin, http.StatusFound)
 		return
@@ -136,9 +136,9 @@ func (h *pageHomeController) Handle() (template.HTML, error) {
 	sidebarHTML := h.buildSidebar()
 
 	// Generate URLs using URL builder functions
-	listURL := urls.ListTables(h.cfg.BasePath)
-	tableViewURL := urls.TableView(h.cfg.BasePath)
-	sqlURL := urls.SQLExecute(h.cfg.BasePath)
+	listURL := urls.ApiTablesList(h.cfg.BasePath)
+	tableURL := urls.PageTable(h.cfg.BasePath)
+	sqlURL := urls.PageSQLExecute(h.cfg.BasePath)
 	_ = urls.PageTableCreate(h.cfg.BasePath) // Will be used in the frontend
 	browseBase := urls.BrowseRows(h.cfg.BasePath, "")
 
@@ -155,7 +155,7 @@ func (h *pageHomeController) Handle() (template.HTML, error) {
 		ExtraBodyEnd: []hb.TagInterface{
 			hb.Script(`window.csrfToken = '` + csrfToken + `';`),
 			hb.Script(`window.urlListTables = '` + listURL + `';`),
-			hb.Script(`window.urlTableView = '` + tableViewURL + `';`),
+			hb.Script(`window.urlTable = '` + tableURL + `';`),
 			hb.Script(`window.urlSQLExecute = '` + sqlURL + `';`),
 			hb.Script(`window.urlBrowseBase = '` + browseBase + `';`),
 			hb.Script(pageJS),

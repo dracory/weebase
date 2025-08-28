@@ -91,18 +91,18 @@ func (g *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	case constants.ActionApiProfilesList:
 		api_profiles_list.New(g.config).ServeHTTP(w, r)
 		return
-	case "api_tables_list":
+	case constants.ActionApiTablesList:
 		api_tables_list.New(g.config).Handle(w, r)
 
 	// Page Handlers
-	case "page_home", "page_server":
+	case constants.ActionPageHome, constants.ActionPageServer:
 		page_home.New(g.config).ServeHTTP(w, r)
-	case "page_login":
+	case constants.ActionPageLogin:
 		page_login.New(g.config).ServeHTTP(w, r)
-	case "page_logout":
+	case constants.ActionPageLogout:
 		page_logout.New(g.config).ServeHTTP(w, r)
 
-	case "page_database":
+	case constants.ActionPageDatabase:
 		// Get session
 		session.EnsureSession(w, r, g.config.SessionSecret)
 
@@ -121,7 +121,7 @@ func (g *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(html))
 
-	case "page_table":
+	case constants.ActionPageTable:
 		page_table.New(g.config).ServeHTTP(w, r)
 
 	// Default to login page

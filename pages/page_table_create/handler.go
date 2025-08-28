@@ -34,7 +34,7 @@ func Handle(basePath, actionParam, csrfToken string, safeModeDefault bool) (temp
 	}
 	// Compute URLs: page renders here, POST goes to API action
 	actionUrl := urls.ApiTableCreate(basePath, nil)
-	redirectUrl := urls.Home(basePath, nil)
+	redirectUrl := urls.PageHome(basePath, nil)
 
 	extraBody := []hb.TagInterface{
 		// Optional SweetAlert for nicer errors

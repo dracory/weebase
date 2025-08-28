@@ -10,40 +10,43 @@ import (
 
 const actionParam = "action"
 
-// Login is a convenience wrapper using defaults: basePath "/db" and actionParam "action".
-// Signature: Login(params)
-func Login(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionPageLogin, params...)
-}
-
-// Connect is a convenience wrapper to construct the connect endpoint URL.
-// Signature: Connect(basePath, params)
-func Connect(basePath string, params ...map[string]string) string {
+// ApiConnect builds the URL for the connect endpoint.
+func ApiConnect(basePath string, params ...map[string]string) string {
 	return URL(basePath, constants.ActionApiConnect, params...)
 }
 
-// Profiles is a convenience wrapper to construct the profiles endpoint URL.
-// Signature: Profiles(basePath, params)
-func Profiles(basePath string, params ...map[string]string) string {
+// ApiProfilesList builds the URL for the profiles endpoint.
+func ApiProfilesList(basePath string, params ...map[string]string) string {
 	return URL(basePath, constants.ActionApiProfilesList, params...)
 }
 
-// Home is a convenience wrapper to construct the Home URL.
-// Signature: Home(basePath, params)
-func Home(basePath string, params ...map[string]string) string {
+// APITableCreate builds the API action URL for Create Table POSTs.
+func ApiTableCreate(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionApiTableCreate, params...)
+}
+
+// ApiTablesList builds the URL for listing tables
+func ApiTablesList(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionApiTablesList, params...)
+}
+
+// PageLogin builds the URL for the login page.
+func PageLogin(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionPageLogin, params...)
+}
+
+// PageHome builds the URL for the Home page.
+func PageHome(basePath string, params ...map[string]string) string {
 	return URL(basePath, constants.ActionPageHome, params...)
 }
 
-// PageTableCreate builds the page action URL for the Create Table page.
-// Signature: PageTableCreate(basePath, params)
-func PageTableCreate(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionPageTableCreate, params...)
+func PageTable(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionPageTable, params...)
 }
 
-// APITableCreate builds the API action URL for Create Table POSTs.
-// Signature: APITableCreate(basePath, params)
-func ApiTableCreate(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionApiTableCreate, params...)
+// PageTableCreate builds the page action URL for the Create Table page.
+func PageTableCreate(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionPageTableCreate, params...)
 }
 
 // URL is a convenience wrapper using defaults: basePath "/db" and actionParam "action".
@@ -52,21 +55,11 @@ func URL(basePath, action string, params ...map[string]string) string {
 	return Build(basePath, action, params...)
 }
 
-// ListTables builds the URL for listing tables
-func ListTables(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionApiListTables, params...)
-}
-
 // BrowseRows builds the URL for browsing table rows
 func BrowseRows(basePath, table string, params ...map[string]string) string {
 	p := lo.FirstOr(params, map[string]string{})
 	p["table"] = table
 	return URL(basePath, constants.ActionApiBrowseRows, p)
-}
-
-// TableView builds the URL for table view page
-func TableView(basePath string, params ...map[string]string) string {
-	return URL(basePath, constants.ActionPageTableView, params...)
 }
 
 // SQLExecute builds the URL for SQL execution
