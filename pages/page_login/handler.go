@@ -4,9 +4,11 @@ import (
 	"embed"
 	"html/template"
 	"net/http"
+	"time"
 
 	"github.com/dracory/weebase/shared"
 	"github.com/dracory/weebase/shared/layout"
+	"github.com/dracory/weebase/shared/session"
 	"github.com/dracory/weebase/shared/types"
 	"github.com/dracory/weebase/shared/urls"
 	"github.com/gouniverse/cdn"
@@ -35,7 +37,24 @@ func New(config types.Config) *Handler {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	html, err := h.GenerateHTML()
+
+	// Ensure we have a valid session
+	sess := session.EnsureSession(w, r, h.config.SessionSecret)
+	if sess == nil {
+		sess = &session.Session{
+			ID:        session.NewRandomID(),
+			CreatedAt: time.Now(),
+		}
+	}
+
+	// Generate and store CSRF token in session
+	csrfToken := session.GenerateCSRFToken(h.config.SessionSecret)
+	sess.CSRFToken = csrfToken
+
+	// Save the session with the CSRF token
+	session.SaveSession(w, r, sess, h.config.SessionSecret)
+
+	html, err := h.GenerateHTML(csrfToken)
 	if err != nil {
 		http.Error(w, "Failed to render login page: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -46,10 +65,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // GenerateHTML renders the login form page and returns full HTML.
-func (h *Handler) GenerateHTML() (
-	template.HTML,
-	error,
-) {
+func (h *Handler) GenerateHTML(csrfToken string) (template.HTML, error) {
 	// Ensure base path has a trailing slash
 	basePath := h.config.BasePath
 	if basePath != "" && basePath[len(basePath)-1] != '/' {
@@ -60,8 +76,6 @@ func (h *Handler) GenerateHTML() (
 	actionUrl := urls.Connect(basePath)
 	profilesUrl := urls.Profiles(basePath)
 	homeUrl := urls.Home(basePath)
-
-	csrfToken := ""
 
 	// Get embedded assets
 	pageCSS, err := css()

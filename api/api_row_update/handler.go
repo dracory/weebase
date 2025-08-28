@@ -14,14 +14,13 @@ import (
 
 // RowUpdate handles row update requests
 type RowUpdate struct {
-	config         types.Config
-	safeModeDefault bool
+	config types.Config
 }
+
 // New creates a new RowUpdate handler
-func New(config types.Config, safeModeDefault bool) *RowUpdate {
+func New(config types.Config) *RowUpdate {
 	return &RowUpdate{
-		config:         config,
-		safeModeDefault: safeModeDefault,
+		config: config,
 	}
 }
 
@@ -44,7 +43,7 @@ func (h *RowUpdate) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check for confirmation in safe mode
-	if h.safeModeDefault && strings.TrimSpace(r.Form.Get("confirm")) != "yes" {
+	if h.config.SafeModeDefault && strings.TrimSpace(r.Form.Get("confirm")) != "yes" {
 		api.Respond(w, r, api.Error("confirmation required (set confirm=yes)"))
 		return
 	}

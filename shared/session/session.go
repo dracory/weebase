@@ -20,6 +20,7 @@ type Session struct {
 	ID        string    `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	Conn      *ActiveConnection `json:"conn,omitempty"`
+	CSRFToken string    `json:"csrf_token,omitempty"`
 }
 
 // ActiveConnection holds the per-session active DB connection.
@@ -72,6 +73,12 @@ func EnsureSession(w http.ResponseWriter, r *http.Request, secret string) *Sessi
 					LastUsed: time.Unix(int64(connData["last_used"].(float64)), 0),
 				}
 			}
+
+			// Load CSRF token if it exists
+			if csrfToken, ok := data["csrf_token"].(string); ok {
+				session.CSRFToken = csrfToken
+			}
+
 			return session
 		}
 	}
@@ -102,6 +109,10 @@ func saveSessionToCookie(w http.ResponseWriter, r *http.Request, session *Sessio
 			"dsn":       session.Conn.DSN,
 			"last_used": session.Conn.LastUsed.Unix(),
 		}
+	}
+
+	if session.CSRFToken != "" {
+		sessionData["csrf_token"] = session.CSRFToken
 	}
 
 	encoded, err := encodeSessionData(sessionData, key)

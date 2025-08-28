@@ -1,7 +1,6 @@
 package api_table_create
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -9,36 +8,56 @@ import (
 
 	"github.com/dracory/api"
 	"github.com/dracory/weebase/shared/session"
-	"gorm.io/gorm"
+	"github.com/dracory/weebase/shared/types"
 )
 
+// TableCreate handles table creation operations
+// It provides functionality to create new database tables with specified columns and constraints
 type TableCreate struct {
-	conn *session.ActiveConnection
+	config          types.Config
+	safeModeDefault bool
 }
 
-func New(conn *session.ActiveConnection) *TableCreate {
-	return &TableCreate{conn: conn}
+// New creates a new TableCreate handler
+func New(config types.Config, safeModeDefault bool) *TableCreate {
+	return &TableCreate{
+		config:          config,
+		safeModeDefault: safeModeDefault,
+	}
 }
 
-// Handle validates, builds SQL, and executes using only injected deps.
+// Handle validates, builds SQL, and executes table creation
 func (tc *TableCreate) Handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		api.Respond(w, r, api.Error("method not allowed"))
 		return
 	}
 
-	if tc.conn == nil {
-		api.Respond(w, r, api.Error("not connected"))
+	sess := session.EnsureSession(w, r, tc.config.SessionSecret)
+	if sess == nil || sess.Conn == nil {
+		api.Respond(w, r, api.Error("not connected to database"))
 		return
 	}
 
-	_ = r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		api.Respond(w, r, api.Error("failed to parse form"))
+		return
+	}
+
 	schema := strings.TrimSpace(r.Form.Get("schema"))
 	table := strings.TrimSpace(r.Form.Get("table"))
 	if table == "" {
-		api.Respond(w, r, api.Error("table required"))
+		api.Respond(w, r, api.Error("table name is required"))
 		return
 	}
+
+	// Check for confirmation in safe mode
+	if tc.safeModeDefault && strings.TrimSpace(r.Form.Get("confirm")) != "yes" {
+		api.Respond(w, r, api.Error("confirmation required (set confirm=yes)"))
+		return
+	}
+
+	// Get column definitions from form data
 	names := r.Form["col_name[]"]
 	types := r.Form["col_type[]"]
 	lens := r.Form["col_length[]"]
@@ -46,43 +65,42 @@ func (tc *TableCreate) Handle(w http.ResponseWriter, r *http.Request) {
 	pkset := indexSet(r.Form["col_pk[]"])
 	aiset := indexSet(r.Form["col_ai[]"])
 
-	d := normalizeDriver(tc.conn.Driver)
-	stmt, errMsg := buildSQL(d, schema, table, names, types, lens, nullable, pkset, aiset)
+	// Validate we have at least one column
+	if len(names) == 0 || len(types) == 0 {
+		api.Respond(w, r, api.Error("at least one column is required"))
+		return
+	}
+
+	// Open database connection
+	db, err := sql.Open(sess.Conn.Driver, sess.Conn.DSN)
+	if err != nil {
+		api.Respond(w, r, api.Error(fmt.Sprintf("failed to connect to database: %v", err)))
+		return
+	}
+	defer db.Close()
+
+	// Build the SQL statement
+	driver := normalizeDriver(sess.Conn.Driver)
+	stmt, errMsg := buildSQL(driver, schema, table, names, types, lens, nullable, pkset, aiset)
 	if errMsg != "" {
 		api.Respond(w, r, api.Error(errMsg))
 		return
 	}
 
-	// Try to get *sql.DB from gorm.DB first
-	if gormDB, ok := tc.conn.DB.(*gorm.DB); ok {
-		sqlDB, err := gormDB.DB()
-		if err != nil {
-			api.Respond(w, r, api.Error("failed to get database connection: "+err.Error()))
-			return
-		}
-		if _, err := sqlDB.ExecContext(r.Context(), stmt); err != nil {
-			api.Respond(w, r, api.Error(err.Error()))
-			return
-		}
-	} else if sqlDB, ok := tc.conn.DB.(*sql.DB); ok {
-		// Handle direct *sql.DB
-		if _, err := sqlDB.ExecContext(r.Context(), stmt); err != nil {
-			api.Respond(w, r, api.Error(err.Error()))
-			return
-		}
-	} else if execCtx, ok := tc.conn.DB.(interface {
-		ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
-	}); ok {
-		// Handle any type that implements ExecContext
-		if _, err := execCtx.ExecContext(r.Context(), stmt); err != nil {
-			api.Respond(w, r, api.Error(err.Error()))
-			return
-		}
-	} else {
-		api.Respond(w, r, api.Error("database connection does not support execution"))
+	// Execute the SQL statement
+	_, err = db.ExecContext(r.Context(), stmt)
+	if err != nil {
+		api.Respond(w, r, api.Error(fmt.Sprintf("error creating table: %v", err)))
 		return
 	}
-	api.Respond(w, r, api.SuccessWithData("created", map[string]any{"sql": stmt}))
+
+	// Return success response with the executed SQL
+	api.Respond(w, r, api.SuccessWithData("created", map[string]any{
+		"sql":     stmt,
+		"table":   table,
+		"schema":  schema,
+		"message": "Table created successfully",
+	}))
 }
 
 func buildSQL(driver, schema, table string, names, types, lens []string, nullable, pkset, aiset map[string]bool) (string, string) {

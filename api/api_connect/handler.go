@@ -60,6 +60,18 @@ func (h *apiConnectController) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Verify CSRF token
+	csrfToken := r.FormValue("csrf_token")
+	if csrfToken == "" {
+		// Try to get from header
+		csrfToken = r.Header.Get("X-CSRF-Token")
+	}
+
+	if csrfToken == "" || csrfToken != s.CSRFToken {
+		api.Respond(w, r, api.Error("invalid or missing CSRF token"))
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		api.Respond(w, r, api.Error("failed to parse form"))
 		return
@@ -113,7 +125,14 @@ func (h *apiConnectController) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		LastUsed: time.Now(),
 	}
 
-	// Save the updated session
+	// Create a new session with the connection
+	s = &session.Session{
+		ID:        s.ID,
+		CreatedAt: s.CreatedAt,
+		Conn:      s.Conn,
+	}
+
+	// Save the updated session with proper cookie settings
 	session.SaveSession(w, r, s, h.cfg.SessionSecret)
 
 	api.Respond(w, r, api.SuccessWithData("connected", map[string]any{

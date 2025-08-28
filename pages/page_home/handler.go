@@ -32,28 +32,21 @@ func New(cfg types.Config) *pageHomeController {
 func (h *pageHomeController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sess := session.EnsureSession(w, r, h.cfg.SessionSecret)
 
-	// Get session
 	// Get enabled drivers
 	enabledDrivers := h.cfg.EnabledDrivers
 	if len(enabledDrivers) == 0 {
 		enabledDrivers = []string{"mysql", "postgres", "sqlite", "sqlserver"}
 	}
 
-	// Create connection info map
-	connInfo := make(map[string]interface{})
-	if conn := sess.Conn; conn != nil {
-		connInfo["driver"] = conn.Driver
-		// Add any additional connection info needed by the home page
-		// Note: ActiveConnection only has ID, Driver, and DB fields
-	}
-
-	// Check if we have an active connection
-	if connInfo["driver"] == "" {
+	// Check if we have an active connection in the session
+	if sess.Conn == nil || sess.Conn.Driver == "" {
 		urlLogin := urls.Login(h.cfg.BasePath)
 		// No active connection, redirect to login
 		http.Redirect(w, r, urlLogin, http.StatusFound)
 		return
 	}
+
+	// Connection is valid, continue processing the home page
 
 	html, err := h.Handle()
 	if err != nil {
