@@ -64,42 +64,35 @@ func (h *pageHomeController) buildSidebar() string {
 	urlExport := urls.PageExport(h.cfg.BasePath)
 	urlPageTableCreate := urls.PageTableCreate(h.cfg.BasePath)
 
+	linkSQLExecute := hb.A().Class("nav-link text-dark").Href(urlSQLExecute).Text("SQL command").Attr("title", "Open SQL console")
+	linkImport := hb.A().Class("nav-link text-dark").Href(urlImport).Text("Import").Attr("title", "Import data")
+	linkExport := hb.A().Class("nav-link text-dark").Href(urlExport).Text("Export").Attr("title", "Export data")
+	linkTableCreate := hb.A().Class("nav-link text-dark").Href(urlPageTableCreate).Attr("title", "Create table").Text("Create table")
+
 	// Quick actions links
 	quickLinks := hb.UL().
 		Class("nav flex-column mb-4").
 		Children([]hb.TagInterface{
-			hb.LI().Class("nav-item").Child(
-				hb.A().Class("nav-link text-dark").
-					Href(urlSQLExecute).
-					Text("SQL command").
-					Attr("title", "Open SQL console"),
-			),
-			hb.LI().Class("nav-item").Child(
-				hb.A().Class("nav-link text-dark").
-					Href(urlImport).
-					Text("Import"),
-			),
-			hb.LI().Class("nav-item").Child(
-				hb.A().Class("nav-link text-dark").
-					Href(urlExport).
-					Text("Export"),
-			),
-			hb.LI().Class("nav-item").Child(
-				hb.A().Class("nav-link text-dark").
-					Href(urlPageTableCreate).
-					Attr("title", "Create table").
-					Text("Create table"),
-			),
+			hb.LI().Class("nav-item").Child(linkSQLExecute),
+			hb.LI().Class("nav-item").Child(linkImport),
+			hb.LI().Class("nav-item").Child(linkExport),
+			hb.LI().Class("nav-item").Child(linkTableCreate),
 		})
 
 	// Database objects section
 	objects := hb.Div().Children([]hb.TagInterface{
 		hb.Paragraph().Class("small text-uppercase text-muted mb-2").Text("Objects"),
-		hb.NewTag("ul").Attr("id", "wb-objects").Class("nav flex-column").Children([]hb.TagInterface{
-			hb.NewTag("li").Class("nav-item").
-				Attr("data-placeholder", "1").
-				Child(hb.NewTag("span").Class("nav-link text-muted").Text("loading...")),
-		}),
+		hb.UL().
+			ID("wb-objects").
+			Class("nav flex-column").
+			Children([]hb.TagInterface{
+				hb.LI().
+					Class("nav-item").
+					Attr("data-placeholder", "1").
+					Child(hb.Span().
+						Class("nav-link text-muted").
+						Text("loading...")),
+			}),
 	})
 
 	// Combine all sidebar sections
@@ -114,32 +107,19 @@ func (h *pageHomeController) buildSidebar() string {
 
 // Handle renders the Home page and returns full HTML.
 func (h *pageHomeController) Handle() (template.HTML, error) {
-	csrfToken := session.GenerateCSRFToken(h.cfg.SessionSecret)
-
 	// Load page assets
 	pageCSS, err := css()
 	if err != nil {
 		return "", err
 	}
 
-	pageJS, err := js()
-	if err != nil {
-		return "", err
-	}
-
-	pageHTML, err := view()
-	if err != nil {
-		return "", err
-	}
-
-	// Build sidebar
-	sidebarHTML := h.buildSidebar()
+	// Generate CSRF token
+	csrfToken := session.GenerateCSRFToken(h.cfg.SessionSecret)
 
 	// Generate URLs using URL builder functions
 	listURL := urls.ApiTablesList(h.cfg.BasePath)
 	tableURL := urls.PageTable(h.cfg.BasePath)
 	sqlURL := urls.PageSQLExecute(h.cfg.BasePath)
-	_ = urls.PageTableCreate(h.cfg.BasePath) // Will be used in the frontend
 	browseBase := urls.BrowseRows(h.cfg.BasePath, "")
 
 	// Build the page using the layout with sidebar
@@ -147,18 +127,38 @@ func (h *pageHomeController) Handle() (template.HTML, error) {
 		Title:           "WeeBase - Home",
 		BasePath:        h.cfg.BasePath,
 		SafeModeDefault: false,
-		MainHTML:        pageHTML,
-		SidebarHTML:     sidebarHTML,
+		MainHTML:        "<div id='main-app'></div>",
+		SidebarHTML:     "<div id='sidebar-app'></div>",
 		ExtraHead: []hb.TagInterface{
 			hb.NewTag("style").Child(hb.Text(pageCSS)),
 		},
 		ExtraBodyEnd: []hb.TagInterface{
-			hb.Script(`window.csrfToken = '` + csrfToken + `';`),
-			hb.Script(`window.urlListTables = '` + listURL + `';`),
-			hb.Script(`window.urlTable = '` + tableURL + `';`),
-			hb.Script(`window.urlSQLExecute = '` + sqlURL + `';`),
-			hb.Script(`window.urlBrowseBase = '` + browseBase + `';`),
-			hb.Script(pageJS),
+			// Global variables for the frontend
+			hb.Script(`
+				window.csrfToken = '` + csrfToken + `';
+				window.urlListTables = '` + listURL + `';
+				window.urlTable = '` + tableURL + `';
+				window.urlSQLExecute = '` + sqlURL + `';
+				window.urlBrowseBase = '` + browseBase + `';
+			`),
+			// Vue 3 from CDN
+			hb.NewTag("script").
+				Attr("src", "https://unpkg.com/vue@3.3.4/dist/vue.global.js"),
+			// Main app
+			hb.Script(`
+				document.addEventListener('DOMContentLoaded', function() {
+					// Initialize sidebar app
+					const { createApp } = Vue;
+					import('/page_home/sidebar.js').then(module => {
+						createApp(module.default).mount('#sidebar-app');
+					});
+
+					// Initialize main app
+					import('/page_home/main.js').then(module => {
+						createApp(module.default).mount('#main-app');
+					});
+				});
+			`),
 		},
 	})
 

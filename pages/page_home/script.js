@@ -30,7 +30,7 @@
             '</li>'; 
           return; 
         }
-        var base = window.urlTableView || window.urlBrowseRows || '';
+        var base = window.urlTable || window.urlBrowseBase || '';
         if (this.tables.length === 0){ el.innerHTML = '<li>No tables</li>'; return; }
         this.tables.forEach(function(t){
           var li = document.createElement('li');
@@ -74,7 +74,7 @@
         thead.innerHTML = '<tr class="bg-slate-50 dark:bg-slate-900"><th class="text-left px-2 py-1 border">Table</th><th class="text-left px-2 py-1 border">Rows</th><th class="px-2 py-1 border">Actions</th></tr>';
         var tbody = document.createElement('tbody');
 
-        var base = window.urlTableView || window.urlBrowseRows || '';
+        var base = window.urlTable || window.urlBrowseBase || '';
         var rows = this.tables.slice();
         function renderRows(filter){
           tbody.innerHTML='';

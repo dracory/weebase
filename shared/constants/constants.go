@@ -19,6 +19,9 @@ const (
 	ActionApiConnect    = "api_connect"
 	ActionApiDisconnect = "api_disconnect"
 
+	// Database operations
+	ActionApiDatabasesList = "api_databases_list"
+
 	// Data operations
 	ActionApiBrowseRows = "api_browse_rows"
 	ActionApiRowView    = "api_row_view"

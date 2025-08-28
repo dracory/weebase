@@ -4,9 +4,12 @@ import (
 	"embed"
 	"encoding/json"
 	"html/template"
+	"net/http"
 
 	"github.com/dracory/weebase/shared"
 	layout "github.com/dracory/weebase/shared/layout"
+	"github.com/dracory/weebase/shared/session"
+	"github.com/dracory/weebase/shared/types"
 	"github.com/gouniverse/cdn"
 	hb "github.com/gouniverse/hb"
 )
@@ -21,16 +24,31 @@ const (
 //go:embed view.html script.js styles.css
 var embeddedFS embed.FS
 
+type pageDatabaseController struct {
+	config types.Config
+}
+
+func New(config types.Config) *pageDatabaseController {
+	return &pageDatabaseController{config: config}
+}
+
+// ServeHTTP handles the HTTP request for the database browser page
+func (c *pageDatabaseController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	html, err := c.pageHtml()
+	if err != nil {
+		http.Error(w, "Failed to render database page: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(html))
+}
+
 // Handle renders the database browser page and returns the full HTML.
-func Handle(
-	tmpl *template.Template,
-	basePath string,
-	safeModeDefault bool,
-	csrfToken string,
-) (template.HTML, error) {
+func (c pageDatabaseController) pageHtml() (template.HTML, error) {
 	// Ensure base path has a trailing slash
-	if basePath != "" && basePath[len(basePath)-1] != '/' {
-		basePath += "/"
+	if c.config.BasePath != "" && c.config.BasePath[len(c.config.BasePath)-1] != '/' {
+		c.config.BasePath += "/"
 	}
 
 	// Get embedded assets
@@ -51,9 +69,9 @@ func Handle(
 
 	// Build API URLs
 	apiURLs := map[string]string{
-		"databases": basePath + "api/databases",
-		"tables":    basePath + "api/tables",
-		"logout":    basePath + "logout",
+		"databases": c.config.BasePath + "api/databases",
+		"tables":    c.config.BasePath + "api/tables",
+		"logout":    c.config.BasePath + "logout",
 	}
 
 	// Page-specific assets
@@ -70,8 +88,13 @@ func Handle(
 		hb.Script(`
 			window.appConfig = {
 				api: ` + string(toJSON(apiURLs)) + `,
-				csrfToken: "` + template.JSEscapeString(csrfToken) + `",
-				safeMode: ` + func() string { if safeModeDefault { return "true" }; return "false" }() + `
+				csrfToken: "` + template.JSEscapeString(session.GenerateCSRFToken(c.config.SessionSecret)) + `",
+				safeMode: ` + func() string {
+			if c.config.SafeModeDefault {
+				return "true"
+			}
+			return "false"
+		}() + `
 			};
 		`),
 		hb.Script(pageJS), // Our main application script
@@ -80,8 +103,8 @@ func Handle(
 	// Render the page with layout
 	page := layout.RenderWith(layout.Options{
 		Title:           DefaultTitle,
-		BasePath:        basePath,
-		SafeModeDefault: safeModeDefault,
+		BasePath:        c.config.BasePath,
+		SafeModeDefault: c.config.SafeModeDefault,
 		MainHTML:        pageHTML,
 		ExtraHead:       extraHead,
 		ExtraBodyEnd:    extraBody,

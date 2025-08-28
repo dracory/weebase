@@ -3,7 +3,6 @@
 package weebase
 
 import (
-	"html/template"
 	"net/http"
 
 	api "github.com/dracory/api"
@@ -16,7 +15,6 @@ import (
 	"github.com/dracory/weebase/pages/page_logout"
 	page_table "github.com/dracory/weebase/pages/page_table"
 	"github.com/dracory/weebase/shared/constants"
-	"github.com/dracory/weebase/shared/session"
 	"github.com/dracory/weebase/shared/types"
 	"gorm.io/gorm"
 )
@@ -95,32 +93,16 @@ func (g *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 		api_tables_list.New(g.config).Handle(w, r)
 
 	// Page Handlers
-	case constants.ActionPageHome, constants.ActionPageServer:
+	case constants.ActionPageHome:
+		page_home.New(g.config).ServeHTTP(w, r)
+	case constants.ActionPageServer:
 		page_home.New(g.config).ServeHTTP(w, r)
 	case constants.ActionPageLogin:
 		page_login.New(g.config).ServeHTTP(w, r)
 	case constants.ActionPageLogout:
 		page_logout.New(g.config).ServeHTTP(w, r)
-
 	case constants.ActionPageDatabase:
-		// Get session
-		session.EnsureSession(w, r, g.config.SessionSecret)
-
-		// Call the handler function directly
-		html, err := page_database.Handle(
-			template.New("database"),
-			g.config.BasePath,
-			g.config.SafeModeDefault,
-			session.GenerateCSRFToken(g.config.SessionSecret),
-		)
-		if err != nil {
-			http.Error(w, "Failed to render database page: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(html))
-
+		page_database.New(g.config).ServeHTTP(w, r)
 	case constants.ActionPageTable:
 		page_table.New(g.config).ServeHTTP(w, r)
 

@@ -1,0 +1,65 @@
+<!-- Main App Template -->
+<div id="main-app">
+  <section class="mt-2">
+    <h3 class="text-lg font-semibold mb-2">Tables and views</h3>
+    
+    <!-- Search -->
+    <div class="mb-4">
+      <input 
+        v-model="searchQuery" 
+        type="text" 
+        placeholder="Search tables..." 
+        class="border rounded px-3 py-2 w-full max-w-md"
+      >
+    </div>
+
+    <!-- Tables list -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-2 text-left">Table</th>
+            <th class="px-4 py-2 text-left">Rows</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <tr v-if="loading">
+            <td colspan="3" class="px-4 py-4 text-center text-gray-500">
+              Loading tables...
+            </td>
+          </tr>
+          <tr v-else-if="error">
+            <td colspan="3" class="px-4 py-4 text-center text-red-600">
+              {{ error }}
+            </td>
+          </tr>
+          <tr v-else-if="filteredTables.length === 0">
+            <td colspan="3" class="px-4 py-4 text-center text-gray-500">
+              No tables found
+            </td>
+          </tr>
+          <tr v-else v-for="table in filteredTables" :key="table" class="hover:bg-gray-50">
+            <td class="px-4 py-3">
+              <a 
+                :href="getTableUrl(table)" 
+                class="text-blue-600 hover:underline"
+              >
+                {{ table }}
+              </a>
+            </td>
+            <td class="px-4 py-3 text-gray-500">—</td>
+            <td class="px-4 py-3 text-center">
+              <a 
+                :href="getTableUrl(table)" 
+                class="text-blue-600 hover:underline"
+              >
+                View
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
