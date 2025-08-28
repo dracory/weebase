@@ -5,17 +5,20 @@ package weebase
 import (
 	"net/http"
 
-	api "github.com/dracory/api"
+	"github.com/dracory/api"
 	"github.com/dracory/weebase/api/api_connect"
+	"github.com/dracory/weebase/api/api_databases_list"
 	"github.com/dracory/weebase/api/api_profiles_list"
 	"github.com/dracory/weebase/api/api_tables_list"
 	"github.com/dracory/weebase/pages/page_database"
 	"github.com/dracory/weebase/pages/page_home"
 	"github.com/dracory/weebase/pages/page_login"
 	"github.com/dracory/weebase/pages/page_logout"
-	page_table "github.com/dracory/weebase/pages/page_table"
+	"github.com/dracory/weebase/pages/page_table"
 	"github.com/dracory/weebase/shared/constants"
 	"github.com/dracory/weebase/shared/types"
+	"github.com/samber/lo"
+
 	"gorm.io/gorm"
 )
 
@@ -80,36 +83,43 @@ func (g *App) Handler() http.Handler {
 // handleRequest routes requests to the appropriate handler
 func (g *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	action := r.URL.Query().Get(g.config.ActionParam)
+	apiActionMap := g.apiActions()
+	pageActionMap := g.pageActions()
 
-	switch action {
-	// API Handlers
-	case constants.ActionApiConnect:
-		api_connect.New(g.config).ServeHTTP(w, r)
-		return
-	case constants.ActionApiProfilesList:
-		api_profiles_list.New(g.config).ServeHTTP(w, r)
-		return
-	case constants.ActionApiTablesList:
-		api_tables_list.New(g.config).Handle(w, r)
-
-	// Page Handlers
-	case constants.ActionPageHome:
-		page_home.New(g.config).ServeHTTP(w, r)
-	case constants.ActionPageServer:
-		page_home.New(g.config).ServeHTTP(w, r)
-	case constants.ActionPageLogin:
-		page_login.New(g.config).ServeHTTP(w, r)
-	case constants.ActionPageLogout:
-		page_logout.New(g.config).ServeHTTP(w, r)
-	case constants.ActionPageDatabase:
-		page_database.New(g.config).ServeHTTP(w, r)
-	case constants.ActionPageTable:
-		page_table.New(g.config).ServeHTTP(w, r)
-
-	// Default to login page
-	default:
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		api.Respond(w, r, api.Error("action not found: "+action+""))
-		// http.Redirect(w, r, urls.Login(g.config.BasePath), http.StatusFound)
+	})
+
+	if lo.HasKey(apiActionMap, action) {
+		// wrap with API middleware (i.e. CORS, CSRF, etc.)
+		handler = apiActionMap[action]
+	}
+
+	if lo.HasKey(pageActionMap, action) {
+		// wrap with PAGE middleware (i.e. session, CSRF, etc.)
+		handler = pageActionMap[action]
+	}
+
+	handler(w, r)
+}
+
+func (g *App) apiActions() map[string]func(w http.ResponseWriter, r *http.Request) {
+	return map[string]func(w http.ResponseWriter, r *http.Request){
+		constants.ActionApiConnect:       api_connect.New(g.config).ServeHTTP,
+		constants.ActionApiDatabasesList: api_databases_list.New(g.config).ServeHTTP,
+		constants.ActionApiProfilesList:  api_profiles_list.New(g.config).ServeHTTP,
+		constants.ActionApiTablesList:    api_tables_list.New(g.config).Handle,
+	}
+}
+
+func (g *App) pageActions() map[string]func(w http.ResponseWriter, r *http.Request) {
+	return map[string]func(w http.ResponseWriter, r *http.Request){
+		constants.ActionPageHome:     page_home.New(g.config).ServeHTTP,
+		constants.ActionPageServer:   page_home.New(g.config).ServeHTTP,
+		constants.ActionPageLogin:    page_login.New(g.config).ServeHTTP,
+		constants.ActionPageLogout:   page_logout.New(g.config).ServeHTTP,
+		constants.ActionPageDatabase: page_database.New(g.config).ServeHTTP,
+		constants.ActionPageTable:    page_table.New(g.config).ServeHTTP,
 	}
 }
 

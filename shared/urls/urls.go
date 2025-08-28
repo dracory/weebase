@@ -25,6 +25,11 @@ func ApiTableCreate(basePath string, params ...map[string]string) string {
 	return URL(basePath, constants.ActionApiTableCreate, params...)
 }
 
+// ApiDatabasesList builds the URL for listing databases
+func ApiDatabasesList(basePath string, params ...map[string]string) string {
+	return URL(basePath, constants.ActionApiDatabasesList, params...)
+}
+
 // ApiTablesList builds the URL for listing tables
 func ApiTablesList(basePath string, params ...map[string]string) string {
 	return URL(basePath, constants.ActionApiTablesList, params...)

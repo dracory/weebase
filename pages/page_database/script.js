@@ -35,7 +35,7 @@
         error.value = '';
         
         try {
-          const response = await fetch('/api/databases', {
+          const response = await fetch('/?action=api_databases_list', {
             credentials: 'same-origin',
             headers: {
               'Accept': 'application/json',

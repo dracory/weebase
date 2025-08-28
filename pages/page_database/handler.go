@@ -69,9 +69,11 @@ func (c pageDatabaseController) pageHtml() (template.HTML, error) {
 
 	// Build API URLs
 	apiURLs := map[string]string{
-		"databases": c.config.BasePath + "api/databases",
-		"tables":    c.config.BasePath + "api/tables",
-		"logout":    c.config.BasePath + "logout",
+		"databases": c.config.BasePath + "?action=api_databases_list",
+		"tables":    c.config.BasePath + "?action=api_tables_list",
+		"connect":   c.config.BasePath + "?action=api_connect",
+		"profiles":  c.config.BasePath + "?action=api_profiles_list",
+		"logout":    c.config.BasePath + "?action=page_logout",
 	}
 
 	// Page-specific assets
