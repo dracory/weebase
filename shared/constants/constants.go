@@ -50,10 +50,13 @@ const (
 
 // Page actions
 const (
-	// System actions
-	ActionPageHome = "home"
+	// Assets
 	ActionAssetCSS = "asset_css"
 	ActionAssetJS  = "asset_js"
+
+	// Pages
+
+	ActionPageHome = "page_home"
 
 	// Authentication
 	ActionPageLogin  = "page_login"

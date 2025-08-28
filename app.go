@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 
+	api "github.com/dracory/api"
 	"github.com/dracory/weebase/api/api_connect"
 	"github.com/dracory/weebase/api/api_profiles_list"
 	"github.com/dracory/weebase/api/api_tables_list"
@@ -125,7 +126,8 @@ func (g *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	// Default to login page
 	default:
-		http.Redirect(w, r, g.config.BasePath+"?action=page_login", http.StatusFound)
+		api.Respond(w, r, api.Error("action not found: "+action+""))
+		// http.Redirect(w, r, urls.Login(g.config.BasePath), http.StatusFound)
 	}
 }
 

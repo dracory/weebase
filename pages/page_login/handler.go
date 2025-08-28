@@ -40,6 +40,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Ensure we have a valid session
 	sess := session.EnsureSession(w, r, h.config.SessionSecret)
+
 	if sess == nil {
 		sess = &session.Session{
 			ID:        session.NewRandomID(),
