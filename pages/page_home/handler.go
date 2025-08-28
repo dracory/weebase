@@ -153,14 +153,12 @@ func (h *pageHomeController) Handle() (template.HTML, error) {
 			hb.NewTag("style").Child(hb.Text(pageCSS)),
 		},
 		ExtraBodyEnd: []hb.TagInterface{
-			hb.NewTag("script").Child(hb.Text(pageJS)),
-			hb.NewTag("script").Child(hb.Text(`
-				window.csrfToken = "` + template.JSEscapeString(csrfToken) + `";
-				window.urlListTables = "` + template.JSEscapeString(listURL) + `";
-				window.urlTableView = "` + template.JSEscapeString(tableViewURL) + `";
-				window.urlSQLExecute = "` + template.JSEscapeString(sqlURL) + `";
-				window.urlBrowseBase = "` + template.JSEscapeString(browseBase) + `";
-			`)),
+			hb.Script(`window.csrfToken = '` + csrfToken + `';`),
+			hb.Script(`window.urlListTables = '` + listURL + `';`),
+			hb.Script(`window.urlTableView = '` + tableViewURL + `';`),
+			hb.Script(`window.urlSQLExecute = '` + sqlURL + `';`),
+			hb.Script(`window.urlBrowseBase = '` + browseBase + `';`),
+			hb.Script(pageJS),
 		},
 	})
 
